@@ -9,6 +9,22 @@ import { whenRevealed } from '@/lib/curtain'
 
 const SMALL = '(max-width: 743px)'
 
+let engaged: Promise<void> | null = null
+/** Phones hold video and extra-poster downloads until the first touch/scroll: the hero poster carries first paint. */
+function whenEngaged(): Promise<void> {
+  if (typeof window === 'undefined' || !window.matchMedia(SMALL).matches) return Promise.resolve()
+  engaged ??= new Promise((res) => {
+    const evs = ['pointerdown', 'touchstart', 'wheel', 'keydown', 'scroll'] as const
+    const go = () => {
+      evs.forEach((e) => window.removeEventListener(e, go))
+      res()
+    }
+    evs.forEach((e) => window.addEventListener(e, go, { passive: true }))
+  })
+  return engaged
+}
+const ready = () => Promise.all([whenRevealed(), whenEngaged()])
+
 function setPoster(v: HTMLVideoElement) {
   if (!v.getAttribute('poster') && v.dataset.poster) v.poster = v.dataset.poster
 }
@@ -65,7 +81,7 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     let alive = true
     let fade = 0
     if (visible.current && active && !prefersReduced()) {
-      whenRevealed().then(() => {
+      ready().then(() => {
         if (alive && visible.current && activeRef.current) start(v)
       })
     } else if (!v.paused) {
@@ -83,7 +99,7 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     const v = ref.current
     if (!v || !warm || prefersReduced()) return
     let alive = true
-    whenRevealed().then(() => {
+    ready().then(() => {
       if (!alive) return
       setPoster(v)
       if (v.preload === 'none') v.preload = 'auto'
@@ -100,7 +116,7 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     let alive = true
     const posterIo = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) whenRevealed().then(() => alive && setPoster(v))
+        if (e.isIntersecting) ready().then(() => alive && setPoster(v))
       },
       { rootMargin: '600px 0px' },
     )
@@ -108,7 +124,7 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
       ([e]) => {
         visible.current = e.isIntersecting
         if (e.isIntersecting && activeRef.current && !prefersReduced()) {
-          whenRevealed().then(() => {
+          ready().then(() => {
             if (alive && visible.current && activeRef.current) start(v)
           })
         } else if (!v.paused) v.pause()

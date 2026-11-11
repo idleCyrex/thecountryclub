@@ -443,7 +443,7 @@ export default function Balls3D({ progress, className = '' }: Props) {
           gate = null
           start()
         },
-        { rootMargin: '150% 0px' },
+        { rootMargin: '60% 0px' },
       )
       gate.observe(host)
     } else {

@@ -23,7 +23,7 @@ type Idle = (cb: () => void, opts?: { timeout: number }) => number
  * Gate a below-the-fold section's GSAP setup on it so that work stays out of the initial load.
  * After building ScrollTriggers behind this gate, call refreshSoon().
  */
-export function useNear(ref: RefObject<Element | null>, margin = '150% 0px') {
+export function useNear(ref: RefObject<Element | null>, margin = '100% 0px') {
   const [near, setNear] = useState(false)
   useEffect(() => {
     const el = ref.current
