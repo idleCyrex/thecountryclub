@@ -50,6 +50,7 @@ html.motion .hero .hx-band { visibility: hidden; }
 html.motion .hero .hx-ribbon, html.motion .hero .hx-content { opacity: 0; visibility: hidden; }
 .hero .hx-cover { position: absolute; inset: 0; z-index: 6; background: var(--dark); pointer-events: none; }
 html:not(.motion) .hero .hx-cover { display: none; }
+@media (max-width: 743px) { .hero .hx-cover { display: none; } }
 
 @media (max-width: 760px) {
   .hero .hx { --rb: min(20vw, 15svh); }

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Footer from '@/components/Footer'
 import RouteReveal from '@/components/RouteReveal'
 
@@ -6,7 +7,9 @@ export default function Template({ children }: { children: React.ReactNode }) {
   return (
     <>
       <main id="main">{children}</main>
-      <Footer />
+      <Suspense>
+        <Footer />
+      </Suspense>
       <RouteReveal />
     </>
   )

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { getContent } from '@/lib/content'
 import Hero from '@/components/home/Hero'
@@ -23,11 +24,22 @@ export default async function Home() {
   return (
     <>
       <Hero hours={hoursLine} />
-      <WaterlineIntro copy={copy.intro} />
-      <GridStack facilities={facilities.filter((f) => f.group === 'home')} />
-      <BoldFitness />
-      <ClassesParallax classes={classes} copy={copy.classes} />
-      <SpaProduct copy={copy.spa[0]} hours={spaHours} />
+      {/* separate boundaries let React hydrate below-the-fold sections in their own short tasks */}
+      <Suspense>
+        <WaterlineIntro copy={copy.intro} />
+      </Suspense>
+      <Suspense>
+        <GridStack facilities={facilities.filter((f) => f.group === 'home')} />
+      </Suspense>
+      <Suspense>
+        <BoldFitness />
+      </Suspense>
+      <Suspense>
+        <ClassesParallax classes={classes} copy={copy.classes} />
+      </Suspense>
+      <Suspense>
+        <SpaProduct copy={copy.spa[0]} hours={spaHours} />
+      </Suspense>
     </>
   )
 }

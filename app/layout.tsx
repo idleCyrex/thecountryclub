@@ -92,9 +92,9 @@ const siteLd = {
 }
 
 // has-sb is set before first paint: toggling the native scrollbar after GSAP pins are measured leaves them 15px narrow.
-// is-loading shows the preloader from the very first paint; components/Preloader lifts it.
+// is-loading shows the preloader from the very first paint (not on phones: the hero shows straight away); components/Preloader lifts it.
 // manual scroll restoration: a refresh always starts at the top instead of jumping back mid-page.
-const motionFlag = `try{if('scrollRestoration' in history)history.scrollRestoration='manual';var c=document.documentElement.classList;c.add('is-loading');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)c.add('motion');if(matchMedia('(pointer: fine)').matches)c.add('has-sb')}catch(e){}`
+const motionFlag = `try{if('scrollRestoration' in history)history.scrollRestoration='manual';var c=document.documentElement.classList;if(!matchMedia('(max-width: 743px)').matches)c.add('is-loading');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)c.add('motion');if(matchMedia('(pointer: fine)').matches)c.add('has-sb')}catch(e){}`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
