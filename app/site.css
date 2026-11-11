@@ -49,7 +49,7 @@ html.motion .rolling[data-enter]:not(.is-ready) .char { transform: scaleY(0); }
 
 /* ===== 1. hero ===== */
 .hero { position: relative; }
-.hero__pin { position: relative; height: 100svh; overflow: hidden; }
+.hero__pin { position: relative; height: 100vh; height: 100lvh; overflow: hidden; }
 .hero__window { position: absolute; inset: 0; clip-path: inset(16% 5% 16% 5% round 10px); background: var(--dark); }
 html.motion .hero__window { clip-path: inset(50% 50% 50% 50%); }
 .hero__clip { position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s var(--ease-expo-out); }

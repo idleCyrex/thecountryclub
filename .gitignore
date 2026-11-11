@@ -2,6 +2,5 @@ node_modules
 .next
 .env*
 !.env.example
-public/media
 next-env.d.ts
 *.tsbuildinfo

@@ -13,10 +13,17 @@ export function rollingHTML(word: string) {
 type RollState = { first: HTMLElement; last: HTMLElement; busy: boolean; tl?: gsap.core.Timeline }
 const rolls = new WeakMap<HTMLElement, RollState>()
 
+/** GSAP reads computed style on first touch of an element; do all reads in one pass before any writes. */
+function warm(els: Element[]) {
+  for (const el of els) if (!(el as unknown as { _gsap?: unknown })._gsap) gsap.getProperty(el, 'scaleY')
+}
+
 function prime(r: RollState) {
   const a = Array.from(r.first.children)
   const b = Array.from(r.last.children)
-  gsap.killTweensOf(a.concat(b))
+  const all = a.concat(b)
+  gsap.killTweensOf(all)
+  warm(all)
   gsap.set(a, { scaleY: 1, transformOrigin: '50% 0%' })
   gsap.set(b, { scaleY: 0, transformOrigin: '50% 100%' })
 }
@@ -67,6 +74,8 @@ export function roll(
   }
   const out = Array.from(cur.first.children)
   const inn = Array.from(cur.last.children)
+  warm(inn)
+  warm(out)
   gsap.set(inn, { scaleY: 0, transformOrigin: '50% 100%' })
   gsap.set(out, { transformOrigin: '50% 0%' })
   el.classList.add('is-rolling')

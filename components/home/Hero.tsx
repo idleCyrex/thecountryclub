@@ -46,7 +46,7 @@ function clubStatus(): { open: boolean; text: string } {
 
 function Track({ text, n = 4 }: { text: string; n?: number }) {
   const half = Array.from({ length: n }, (_, i) => (
-    <span key={i} className="hx-item rolling" dangerouslySetInnerHTML={{ __html: rollingHTML(text) }} />
+    <span key={i} className={`hx-item rolling${i >= 2 ? ' hx-item--wide' : ''}`} dangerouslySetInnerHTML={{ __html: rollingHTML(text) }} />
   ))
   return (
     <div className="hx-track" aria-hidden="true">
@@ -59,6 +59,7 @@ function Track({ text, n = 4 }: { text: string; n?: number }) {
 export default function Hero({ hours }: { hours: string }) {
   const root = useRef<HTMLElement>(null)
   const [active, setActive] = useState(0)
+  const [count, setCount] = useState(CLIPS.length)
   const [cycling, setCycling] = useState(false)
   const [reduced, setReduced] = useState(false)
   const [status, setStatus] = useState<{ open: boolean; text: string } | null>(null)
@@ -68,6 +69,10 @@ export default function Hero({ hours }: { hours: string }) {
     tick()
     const id = window.setInterval(tick, 60000)
     return () => window.clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    if (window.innerWidth < 744) setCount(3)
   }, [])
 
   useEffect(() => {
@@ -81,9 +86,9 @@ export default function Hero({ hours }: { hours: string }) {
 
   useEffect(() => {
     if (!cycling) return
-    const id = window.setTimeout(() => setActive((a) => (a + 1) % CLIPS.length), EVERY)
+    const id = window.setTimeout(() => setActive((a) => (a + 1) % count), EVERY)
     return () => window.clearTimeout(id)
-  }, [cycling, active])
+  }, [cycling, active, count])
 
   useGSAP(
     (_ctx, contextSafe) => {
@@ -165,7 +170,12 @@ export default function Hero({ hours }: { hours: string }) {
       items.forEach((it) => initRolling(it))
       const rollAll = () => {
         if (document.hidden || hero.getBoundingClientRect().bottom < 0) return
-        items.forEach((it) => roll(it, { duration: 0.9, stagger: 0.045 }))
+        const vw = window.innerWidth
+        const visible = items.filter((it) => {
+          const r = it.getBoundingClientRect()
+          return r.width > 0 && r.right > 0 && r.left < vw
+        })
+        visible.forEach((it) => roll(it, { duration: 0.9, stagger: 0.045 }))
       }
       tl.call(rollAll, undefined, 0.5)
       const rollTimer = window.setInterval(rollAll, 3600)
@@ -199,7 +209,7 @@ export default function Hero({ hours }: { hours: string }) {
       <h1 className="sr-only">The Country Club at Port de Plaisance: gym, tennis, pool and Impulse Spa in Cole Bay, St. Maarten</h1>
       <div className="hero__pin hx" style={{ ['--hx-every' as string]: `${EVERY}ms` }}>
         <div className="hx-window">
-          {CLIPS.map((k, i) => (
+          {CLIPS.slice(0, count).map((k, i) => (
             <div key={k} className={`hx-clip ${i === active ? 'is-active' : ''}`}>
               <MediaFill k={k} active={i === active} priority={i === 0} w={2000} />
             </div>

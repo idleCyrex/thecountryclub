@@ -4,6 +4,18 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { media, mediaItem, poster, srcSet } from '@/lib/media'
 import { DIMS } from '@/content/media-dims'
 import { prefersReduced } from '@/lib/gsap'
+import { preload } from 'react-dom'
+import { whenRevealed } from '@/lib/curtain'
+
+function setPoster(v: HTMLVideoElement) {
+  if (!v.getAttribute('poster') && v.dataset.poster) v.poster = v.dataset.poster
+}
+
+function start(v: HTMLVideoElement) {
+  if (prefersReduced()) return
+  if (v.preload === 'none') v.preload = 'auto'
+  v.play().catch(() => {})
+}
 
 interface Props {
   k: string
@@ -33,27 +45,45 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     activeRef.current = active
     const v = ref.current
     if (!v) return
+    let alive = true
     if (visible.current && active && !prefersReduced()) {
-      if (v.preload === 'none') v.preload = 'auto'
-      v.play().catch(() => {})
+      whenRevealed().then(() => {
+        if (alive && visible.current && activeRef.current) start(v)
+      })
     } else if (!v.paused) v.pause()
+    return () => {
+      alive = false
+    }
   }, [active])
 
   useEffect(() => {
     const v = ref.current
     if (!v) return
+    let alive = true
+    const posterIo = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) whenRevealed().then(() => alive && setPoster(v))
+      },
+      { rootMargin: '600px 0px' },
+    )
     const io = new IntersectionObserver(
       ([e]) => {
         visible.current = e.isIntersecting
         if (e.isIntersecting && activeRef.current && !prefersReduced()) {
-          if (v.preload === 'none') v.preload = 'auto'
-          v.play().catch(() => {})
+          whenRevealed().then(() => {
+            if (alive && visible.current && activeRef.current) start(v)
+          })
         } else if (!v.paused) v.pause()
       },
       { rootMargin: '150px 0px' },
     )
+    posterIo.observe(v)
     io.observe(v)
-    return () => io.disconnect()
+    return () => {
+      alive = false
+      posterIo.disconnect()
+      io.disconnect()
+    }
   }, [failed])
 
   if (!item) return null
@@ -81,12 +111,16 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     )
   }
 
+  const posterUrl = poster(k, { w: Math.min(w, 1400) })
+  if (priority && posterUrl) preload(posterUrl, { as: 'image', fetchPriority: 'high' })
+
   return (
     <video
       ref={ref}
       className={cls}
       style={style}
-      poster={poster(k, { w: Math.min(w, 1400) })}
+      poster={priority ? posterUrl : undefined}
+      data-poster={priority ? undefined : posterUrl || undefined}
       muted
       loop
       playsInline

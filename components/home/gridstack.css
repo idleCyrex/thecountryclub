@@ -1,5 +1,8 @@
-.pile .pile__pin { position: relative; height: 100svh; overflow: hidden; background: var(--dark); }
+.pile .pile__pin { position: relative; height: 100vh; height: 100lvh; overflow: hidden; background: var(--dark); }
 .pile .pile__stage { position: absolute; inset: 0; }
+@supports (height: 1dvh) {
+  .pile .pile__stage { bottom: calc(100lvh - 100dvh); }
+}
 .pile .gs__grid {
   --th: min(12.6vw, 20svh); --tw: calc(var(--th) * .81);
   position: absolute; left: 50%; top: 46%; translate: -50% -50%;
@@ -34,8 +37,9 @@ html.motion .pile .pile__word { visibility: hidden; }
   .pile .gs__grid {
     --g: 1.2vw;
     left: 0; top: 0; translate: none; width: 100%; height: 100%; box-sizing: border-box; padding: var(--g); gap: var(--g);
-    grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(9, 1fr); grid-auto-rows: auto;
+    grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, 1fr); grid-auto-rows: auto;
   }
+  .pile .pile__photo.is-desk { display: none; }
   .pile .pile__photo { width: 100%; height: 100%; }
   .pile .pile__word { font-size: 24vw; }
   .pile .pile__brush { font-size: 9vw; }

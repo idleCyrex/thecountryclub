@@ -32,6 +32,15 @@ const CELLS: string[] = []
 const TOP_KEY: Record<string, string> = {
   'THE CLUB': 'aerial-club', 'THE GYM': 'gym-rack', 'THE COURTS': 'tennis-court', 'THE POOL': 'pool', 'THE SPA': 'spa-stones',
 }
+const MUST = new Set([...Object.values(TOP_KEY)])
+const MOBILE_KEEP = new Set<number>()
+{
+  let o = 0
+  CELLS.forEach((k, i) => {
+    if (MUST.has(k) || k.startsWith('crew-') || o++ % 3 === 0) MOBILE_KEEP.add(i)
+  })
+  for (let i = 1; MOBILE_KEEP.size < 20 && i < CELLS.length; i += 2) MOBILE_KEEP.add(i)
+}
 const WORDS = ['THE CLUB', 'THE GYM', 'THE COURTS', 'THE POOL', 'THE SPA']
 const REVEAL = 0.7
 const LIVE = 1.1
@@ -50,7 +59,9 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
       const stage = el.querySelector<HTMLElement>('.pile__stage')!
       const grid = el.querySelector<HTMLElement>('.gs__grid')!
       const word = el.querySelector<HTMLElement>('.pile__word')!
-      const tiles = gsap.utils.toArray<HTMLElement>('.pile__photo', el)
+      const tiles = gsap.utils
+        .toArray<HTMLElement>('.pile__photo', el)
+        .filter((t) => getComputedStyle(t).display !== 'none')
       const scrim = el.querySelector<HTMLElement>('.pile__scrim')!
       const byKey = new Map(tiles.map((t) => [t.dataset.k!, t]))
       const baseZ = new Map(tiles.map((t) => [t, Number(t.style.zIndex)]))
@@ -171,7 +182,7 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         <div className="pile__stage">
           <div className="gs__grid">
             {CELLS.map((k, i) => (
-              <figure key={i} className="pile__photo" data-k={k} style={{ zIndex: i + 1 }}>
+              <figure key={i} className={`pile__photo${MOBILE_KEEP.has(i) ? '' : ' is-desk'}`} data-k={k} style={{ zIndex: i + 1 }}>
                 <MediaFill k={k} w={800} sizes="(max-width: 743px) 25vw, 20vw" style={{ objectPosition: POS[k] ?? '50% 35%' }} />
               </figure>
             ))}

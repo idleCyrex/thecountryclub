@@ -6,8 +6,7 @@ import { releaseBoot } from '@/lib/curtain'
 import { startScroll, stopScroll } from '@/lib/scroll'
 import './preloader.css'
 
-// held until the page is actually loaded; this is only a safety net for a stalled request
-const MAX_MS = 45000
+const MAX_MS = 6000
 const QUICK_MS = 600
 const BALL = 26
 const STEPS = ['Warming up the courts', 'Filling the pool', 'Racking the weights', 'Heating the sauna']
@@ -159,14 +158,20 @@ export default function Preloader() {
       if (!alive) return
       const tasks: Promise<unknown>[] = []
       if (document.fonts && document.fonts.status !== 'loaded') tasks.push(document.fonts.ready)
-      if (document.readyState !== 'complete') tasks.push(new Promise((r) => window.addEventListener('load', r, { once: true })))
       document.querySelectorAll<HTMLImageElement>('main img').forEach((img) => {
         if (img.complete || !inView(img)) return
         tasks.push(new Promise((r) => (img.addEventListener('load', r, { once: true }), img.addEventListener('error', r, { once: true }))))
       })
       document.querySelectorAll<HTMLVideoElement>('main video').forEach((v) => {
-        if (v.readyState >= 2 || v.preload === 'none' || !inView(v)) return
-        tasks.push(new Promise((r) => (v.addEventListener('loadeddata', r, { once: true }), v.addEventListener('error', r, { once: true }))))
+        const src = v.getAttribute('poster')
+        if (!src || !inView(v)) return
+        tasks.push(
+          new Promise((r) => {
+            const im = new Image()
+            im.onload = im.onerror = () => r(null)
+            im.src = src
+          }),
+        )
       })
       // "already loaded": nothing left, or the last bits land within a blink of hydration
       const t = performance.now()
