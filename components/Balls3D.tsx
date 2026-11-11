@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { prefersReduced } from '@/lib/gsap'
+import { whenRevealed } from '@/lib/curtain'
 
 interface Props {
   /** 0..1 scroll progress of the pinned section (written by the parent timeline) */
@@ -44,6 +45,13 @@ const BALLS: BallCfg[] = [
   { keys: [[0.3, 0.9, 1.7], [0.42, 0.82, 0.7], [0.6, 0.6, -0.55], [0.78, -0.75, 0.5], [0.96, -0.95, -1.7]], show: [0.3, 0.965], size: 0.26, phase: 2.4, hero: false },
   { keys: [[0.55, -0.95, -1.7], [0.68, -0.62, -0.5], [0.82, 0.72, 0.55], [0.96, 0.95, 1.8]], show: [0.55, 0.965], size: 0.28, phase: 4.1, hero: false },
 ]
+
+type Idle = (cb: () => void, opts?: { timeout: number }) => number
+const idle = (cb: () => void) => {
+  const ric = (window as unknown as { requestIdleCallback?: Idle }).requestIdleCallback
+  if (ric) ric(cb, { timeout: 1000 })
+  else window.setTimeout(cb, 1)
+}
 
 const SEAM_AMP = 0.12
 const SEAM_SLOPE = (SEAM_AMP * 4 * Math.PI * 1024) / 2048
@@ -152,13 +160,14 @@ function sample(keys: Key[], p: number, axis: 1 | 2) {
   return (2 * t3 - 3 * t2 + 1) * k1[axis] + (t3 - 2 * t2 + t) * m1 + (-2 * t3 + 3 * t2) * k2[axis] + (t3 - t2) * m2
 }
 
-/** Branded rolling tennis balls (Three.js), scrubbed by the parent's scroll progress. CSS fallback without WebGL. */
+/** Branded rolling tennis balls (Three.js), scrubbed by the parent's scroll progress. CSS fallback without WebGL, on phones and under reduced motion. */
 export default function Balls3D({ progress, className = '' }: Props) {
   const wrap = useRef<HTMLDivElement>(null)
   const [fallback, setFallback] = useState(false)
 
   useEffect(() => {
-    if (prefersReduced()) {
+    // purely decorative: phones get the static CSS balls instead of three.js + a WebGL context
+    if (prefersReduced() || window.innerWidth < 744) {
       setFallback(true)
       return
     }
@@ -204,6 +213,8 @@ export default function Balls3D({ progress, className = '' }: Props) {
       scene.add(key, rim, new THREE.AmbientLight(0xffffff, 0.3))
 
       await document.fonts?.ready
+      // the branded texture is a long canvas job: give it its own idle slot
+      await new Promise<void>((r) => idle(r))
       if (disposed) {
         envRT.dispose()
         pmrem.dispose()
@@ -410,9 +421,16 @@ export default function Balls3D({ progress, className = '' }: Props) {
       if (disposed) cleanup()
     }
 
+    // near the section -> after the preloader / curtain -> idle, then three.js
     const start = () => {
-      init().catch(() => {
-        if (!disposed) setFallback(true)
+      whenRevealed().then(() => {
+        if (disposed) return
+        idle(() => {
+          if (disposed) return
+          init().catch(() => {
+            if (!disposed) setFallback(true)
+          })
+        })
       })
     }
 

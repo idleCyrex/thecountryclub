@@ -43,6 +43,14 @@ export function initRolling(el: HTMLElement, startWord?: string) {
   return r
 }
 
+/** initRolling for many elements, skipping ones already primed: every style read happens before any write. */
+export function initRollingAll(els: HTMLElement[]) {
+  const fresh = els.filter((el) => !rolls.has(el))
+  if (!fresh.length) return
+  warm(fresh.flatMap((el) => Array.from(el.querySelectorAll(':scope > .first > *, :scope > .last > *'))))
+  fresh.forEach((el) => initRolling(el))
+}
+
 /**
  * Split-flap roll: each char of the old copy squashes up (scaleY 1 to 0, origin top) while the same
  * char of the new copy grows from the baseline (0 to 1, origin bottom), staggered left to right.

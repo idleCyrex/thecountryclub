@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { gsap, useGSAP, prefersReduced, isSmall } from '@/lib/gsap'
 import { brushWrite } from '@/lib/motion'
+import { useNear, refreshSoon } from '@/lib/lazy'
 import Brush from '../ui/Brush'
 import MediaFill from '../ui/MediaFill'
 import Balls3D from '../Balls3D'
@@ -16,49 +17,48 @@ export default function BoldFitness() {
   const root = useRef<HTMLElement>(null)
   const progress = useRef(0)
   const maskId = `bf-mask-${useId().replace(/:/g, '')}`
+  const near = useNear(root)
 
   // keep the stage unpainted until it is near: its giant masked type otherwise becomes the page's LCP
   useEffect(() => {
-    const el = root.current
-    if (!el) return
-    if (!('IntersectionObserver' in window)) return void el.classList.add('is-near')
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (!e.isIntersecting) return
-        el.classList.add('is-near')
-        io.disconnect()
-      },
-      { rootMargin: '120% 0px' },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
+    if (near) root.current?.classList.add('is-near')
+  }, [near])
 
   useGSAP(
     () => {
       const el = root.current
-      if (!el || prefersReduced()) return
+      if (!near || !el || prefersReduced()) return
       const small = isSmall()
       const zoom = el.querySelector<HTMLElement>('.bf-zoom')!
       const twin = el.querySelector<SVGTextElement>('.bf-twin')!
-      const fontPx = () => parseFloat(getComputedStyle(twin).fontSize) || 300
+      // cached so the tween's function values never read layout between writes; re-read at each refresh start
+      let fs = 300
+      let zh = 0
+      const measure = () => {
+        fs = parseFloat(getComputedStyle(twin).fontSize) || 300
+        zh = zoom.clientHeight
+      }
       // mobile: stretched cap height fills ~64% of the stage
-      const syEnd = () => (small ? gsap.utils.clamp(2.38, 7, (zoom.clientHeight * 0.64) / (0.711 * fontPx())) : 2.38)
+      const syEnd = () => (small ? gsap.utils.clamp(2.38, 7, (zh * 0.64) / (0.711 * fs)) : 2.38)
       const syStart = () => (small ? syEnd() * 0.62 : 1.66)
 
       // zoom origin = a point inside the T stem of the final (stretched) word, in stage px
       const setOrigin = () => {
         try {
           const r = twin.getExtentOfChar(ZOOM_CHAR)
-          const fs = fontPx()
-          const base = twin.y.baseVal[0]?.value ?? zoom.clientHeight * 0.94
+          const base = twin.y.baseVal[0]?.value ?? zh * 0.94
           zoom.style.setProperty('--bf-ox', `${r.x + r.width / 2}px`)
           zoom.style.setProperty('--bf-oy', `${base - 0.3 * 0.7 * fs * syEnd()}px`)
         } catch {
           /* text not laid out yet; next refresh retries */
         }
       }
+
+      measure()
+      gsap.utils.toArray<Element>('.bf-fitness, .bf-brush, .bf-col--l, .bf-col--r, .bf-cut', el).concat(zoom).forEach((t) => gsap.getProperty(t, 'x'))
       setOrigin()
+      // queued ahead of the pin so this sorted refresh runs before (and supersedes) ScrollTrigger's own pin refresh
+      refreshSoon()
 
       gsap
         .timeline({
@@ -71,6 +71,7 @@ export default function BoldFitness() {
             anticipatePin: small ? 1 : 0,
             scrub: 0.6,
             invalidateOnRefresh: true,
+            onRefreshInit: measure,
             onRefresh: setOrigin,
             onLeave: () => {
               el.style.visibility = 'hidden'
@@ -104,7 +105,7 @@ export default function BoldFitness() {
         .to('.bf-balls', { autoAlpha: 0, duration: 0.5 }, 9.2)
         .to({}, { duration: 0.1 }, 9.9)
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   return (

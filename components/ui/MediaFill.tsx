@@ -7,13 +7,26 @@ import { prefersReduced } from '@/lib/gsap'
 import { preload } from 'react-dom'
 import { whenRevealed } from '@/lib/curtain'
 
+const SMALL = '(max-width: 743px)'
+
 function setPoster(v: HTMLVideoElement) {
   if (!v.getAttribute('poster') && v.dataset.poster) v.poster = v.dataset.poster
 }
 
+/** One file per device, chosen at load time: two <source media> elements can fetch both. */
+function setSource(v: HTMLVideoElement) {
+  const { src, srcSm } = v.dataset
+  if (!src || v.getAttribute('src')) return false
+  v.src = srcSm && window.matchMedia(SMALL).matches ? srcSm : src
+  return true
+}
+
+const FADE_MS = 1700
+
 function start(v: HTMLVideoElement) {
   if (prefersReduced()) return
   if (v.preload === 'none') v.preload = 'auto'
+  setSource(v)
   v.play().catch(() => {})
 }
 
@@ -26,7 +39,11 @@ interface Props {
   sizes?: string
   /** when false the video stays paused even if visible (e.g. inactive hero clip) */
   active?: boolean
+  /** buffer the video ahead of time (paused) so switching to it is instant */
+  warm?: boolean
   priority?: boolean
+  /** video: paint the poster as a responsive <img> under the video (parent must be positioned) */
+  posterImg?: boolean
   alt?: string
 }
 
@@ -34,7 +51,7 @@ interface Props {
  * Image or muted looping video for a manifest key. Videos lazy-start via IntersectionObserver,
  * never autoplay under reduced motion, and fall back to the poster photo if the file is missing.
  */
-export default function MediaFill({ k, className = '', style, w = 1600, sizes = '100vw', active = true, priority, alt }: Props) {
+export default function MediaFill({ k, className = '', style, w = 1600, sizes = '100vw', active = true, warm, priority, posterImg, alt }: Props) {
   const item = mediaItem(k)
   const [failed, setFailed] = useState(false)
   const ref = useRef<HTMLVideoElement>(null)
@@ -46,15 +63,36 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     const v = ref.current
     if (!v) return
     let alive = true
+    let fade = 0
     if (visible.current && active && !prefersReduced()) {
       whenRevealed().then(() => {
         if (alive && visible.current && activeRef.current) start(v)
       })
-    } else if (!v.paused) v.pause()
+    } else if (!v.paused) {
+      // keep the outgoing clip moving while it cross-fades out
+      if (visible.current && !active) fade = window.setTimeout(() => !activeRef.current && v.pause(), FADE_MS)
+      else v.pause()
+    }
+    return () => {
+      alive = false
+      window.clearTimeout(fade)
+    }
+  }, [active])
+
+  useEffect(() => {
+    const v = ref.current
+    if (!v || !warm || prefersReduced()) return
+    let alive = true
+    whenRevealed().then(() => {
+      if (!alive) return
+      setPoster(v)
+      if (v.preload === 'none') v.preload = 'auto'
+      if (!setSource(v) && v.readyState === 0 && v.networkState !== HTMLMediaElement.NETWORK_LOADING) v.load()
+    })
     return () => {
       alive = false
     }
-  }, [active])
+  }, [warm])
 
   useEffect(() => {
     const v = ref.current
@@ -89,21 +127,21 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
   if (!item) return null
   const label = alt ?? item.alt
   const cls = `media-fill ${className}`
-
-  if (item.kind === 'image' || failed) {
-    const key = item.kind === 'image' ? k : item.poster
-    if (!key) return <span className={`${cls} media-fill--empty`} style={style} />
-    const dims = DIMS[key]
+  const stillKey = item.kind === 'image' ? k : item.poster
+  const still = (extra?: CSSProperties, decorative = false) => {
+    if (!stillKey) return <span className={`${cls} media-fill--empty`} style={style} />
+    const dims = DIMS[stillKey]
     return (
       <img
         className={cls}
-        style={style}
+        style={extra ? { ...style, ...extra } : style}
         width={dims?.[0]}
         height={dims?.[1]}
-        src={media(key, { w })}
-        srcSet={srcSet(key)}
+        src={media(stillKey, { w })}
+        srcSet={srcSet(stillKey)}
         sizes={sizes}
-        alt={label}
+        alt={decorative ? '' : label}
+        aria-hidden={decorative || undefined}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
         fetchPriority={priority ? 'high' : undefined}
@@ -111,24 +149,37 @@ export default function MediaFill({ k, className = '', style, w = 1600, sizes = 
     )
   }
 
-  const posterUrl = poster(k, { w: Math.min(w, 1400) })
-  if (priority && posterUrl) preload(posterUrl, { as: 'image', fetchPriority: 'high' })
+  if (item.kind === 'image' || failed) return still()
 
-  return (
+  const usePosterImg = posterImg && !!stillKey
+  const posterUrl = poster(k, { w: Math.min(w, 1400) })
+  if (priority && usePosterImg) {
+    const set = srcSet(stillKey!)
+    preload(media(stillKey!, { w: Math.min(w, 1400) }), { as: 'image', fetchPriority: 'high', imageSrcSet: set, imageSizes: sizes })
+  } else if (priority && posterUrl) preload(posterUrl, { as: 'image', fetchPriority: 'high' })
+
+  const video = (
     <video
       ref={ref}
       className={cls}
-      style={style}
-      poster={priority ? posterUrl : undefined}
-      data-poster={priority ? undefined : posterUrl || undefined}
+      style={usePosterImg ? { ...style, position: 'relative' } : style}
+      poster={priority && !usePosterImg ? posterUrl : undefined}
+      data-poster={priority || usePosterImg ? undefined : posterUrl || undefined}
+      data-src={media(k)}
+      data-src-sm={media(k, { w: 960 })}
       muted
       loop
       playsInline
       preload="none"
       aria-label={label}
-    >
-      <source media="(max-width: 743px)" src={media(k, { w: 960 })} type="video/mp4" />
-      <source src={media(k)} type="video/mp4" onError={() => setFailed(true)} />
-    </video>
+      onError={() => setFailed(true)}
+    />
+  )
+  if (!usePosterImg) return video
+  return (
+    <>
+      {still({ position: 'absolute', inset: 0 }, true)}
+      {video}
+    </>
   )
 }

@@ -7,27 +7,32 @@ import { drawOnScroll } from '@/lib/draw'
 import MediaFill from '../ui/MediaFill'
 import TransitionLink from '../ui/TransitionLink'
 import { media } from '@/lib/media'
+import { useNear } from '@/lib/lazy'
 
 export default function SpaProduct({ copy, hours }: { copy: string; hours: string }) {
   const root = useRef<HTMLElement>(null)
+  const near = useNear(root)
 
   useGSAP(
     () => {
-      if (prefersReduced()) return
+      const el = root.current
+      if (!near || !el || prefersReduced()) return
+      // reads first: transform parse for every tweened element, then the frame's stroke length
+      gsap.utils.toArray<Element>('.spa-band__h i, .spa-band__pw, .spa-band__chip', el).forEach((t) => gsap.getProperty(t, 'y'))
+      drawOnScroll('.spa-band__frame rect', { trigger: '.spa-band__pw', start: 'top 85%', end: 'center 45%', scrub: 1 })
       gsap.fromTo('.spa-band__h i', { yPercent: 125 }, { yPercent: 0, duration: 1.1, stagger: 0.12, ease: 'expo.out', onComplete: () => { gsap.set('.spa-band__h span', { overflow: 'visible' }) }, scrollTrigger: { trigger: '.spa-band__h', start: 'top 85%', once: true } })
       gsap.fromTo(
         '.spa-band__pw',
         { yPercent: 12 },
-        { yPercent: -8, ease: 'none', scrollTrigger: { trigger: root.current, start: 'top bottom', end: 'bottom top', scrub: 0.8 } },
+        { yPercent: -8, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.8 } },
       )
       gsap.fromTo(
         '.spa-band__chip',
         { yPercent: 60, rotation: -14 },
-        { yPercent: -60, rotation: 14, ease: 'none', scrollTrigger: { trigger: root.current, start: 'top bottom', end: 'bottom top', scrub: 1 } },
+        { yPercent: -60, rotation: 14, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 } },
       )
-      drawOnScroll('.spa-band__frame rect', { trigger: '.spa-band__pw', start: 'top 85%', end: 'center 45%', scrub: 1 })
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   return (

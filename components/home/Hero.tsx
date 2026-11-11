@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger, useGSAP, prefersReduced } from '@/lib/gsap'
 import { startScroll, stopScroll } from '@/lib/scroll'
 import { whenRevealed } from '@/lib/curtain'
-import { initRolling, killRolling, roll, rollingHTML } from '@/lib/motion'
+import { initRollingAll, killRolling, roll, rollingHTML } from '@/lib/motion'
 import MediaFill from '../ui/MediaFill'
 import TransitionLink from '../ui/TransitionLink'
 import './hero.css'
 
 const CLIPS = ['v-pool', 'v-tennis', 'v-aerial', 'v-spin', 'v-lift']
+const SPLIT_CLIP = CLIPS.indexOf('v-tennis')
 const EVERY = 9000
 const LINE = 'TRAIN IN PARADISE · COUNTRY CLUB ·'
 const SPEED = 0.086 // viewport widths per second
@@ -44,17 +45,15 @@ function clubStatus(): { open: boolean; text: string } {
   return { open: false, text: `Closed · opens tomorrow ${hr(HOURS[nd][0])}` }
 }
 
-function Track({ text, n = 4 }: { text: string; n?: number }) {
-  const half = Array.from({ length: n }, (_, i) => (
-    <span key={i} className={`hx-item rolling${i >= 2 ? ' hx-item--wide' : ''}`} dangerouslySetInnerHTML={{ __html: rollingHTML(text) }} />
-  ))
-  return (
-    <div className="hx-track" aria-hidden="true">
-      {half}
-      {half}
-    </div>
-  )
-}
+// One copy per half is wider than any normal viewport (the setup adds copies if not), which keeps the
+// split-char DOM small. `is-ready` hides the second char layer until a roll needs it.
+const LINE_HTML = { __html: rollingHTML(LINE) }
+const TRACK = (
+  <div className="hx-track" aria-hidden="true">
+    <span className="hx-item rolling is-ready" dangerouslySetInnerHTML={LINE_HTML} />
+    <span className="hx-item rolling is-ready" dangerouslySetInnerHTML={LINE_HTML} />
+  </div>
+)
 
 export default function Hero({ hours }: { hours: string }) {
   const root = useRef<HTMLElement>(null)
@@ -105,12 +104,14 @@ export default function Hero({ hours }: { hours: string }) {
       }
 
       let alive = true
-      const loops: gsap.core.Tween[] = []
-      hero.querySelectorAll<HTMLElement>('.hx-track').forEach((track) => {
-        const w = track.scrollWidth / 2
-        const dur = w / (window.innerWidth * SPEED)
-        loops.push(gsap.fromTo(track, { x: 0 }, { x: -w, duration: dur, ease: 'none', repeat: -1 }))
-      })
+      let split = false
+      // layout reads first, in one pass
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const tracks = Array.from(hero.querySelectorAll<HTMLElement>('.hx-track'))
+      const halves = tracks.map((t) => t.scrollWidth / 2)
+      const rb0 = ribbons[0]?.offsetHeight ?? 0
+      const tall = hero.offsetHeight > 0
 
       const side = () => (window.innerWidth <= 760 ? 4 : 5.3)
       const rb = () => ribbons[0]?.offsetHeight ?? 0
@@ -118,7 +119,23 @@ export default function Hero({ hours }: { hours: string }) {
       const midTop = () => (hero.offsetHeight ? seam() - rb() : 0)
       const midBot = () => (hero.offsetHeight ? seam() - (window.innerHeight - rb()) : 0)
 
-      const pinEnd = window.innerWidth <= 743 ? '+=90%' : '+=150%'
+      // xPercent keeps the loop seamless even if the display font swaps in after this measure
+      const loops = tracks.map((track, i) => {
+        let half = halves[i]
+        if (half > 0 && half < vw) {
+          const item = track.firstElementChild
+          const extra = Math.ceil(vw / half) - 1
+          for (let c = 0; item && c < extra * 2; c++) track.appendChild(item.cloneNode(true))
+          half *= extra + 1
+        }
+        return gsap.fromTo(track, { xPercent: 0 }, { xPercent: -50, duration: half / (vw * SPEED), ease: 'none', repeat: -1 })
+      })
+
+      stopScroll()
+      gsap.set('.hx-ribbon--top', { y: tall ? Math.round(vh / 2) - rb0 : 0, scaleY: 0, transformOrigin: '50% 100%' })
+      gsap.set('.hx-ribbon--bottom', { y: tall ? Math.round(vh / 2) - (vh - rb0) : 0, scaleY: 0, transformOrigin: '50% 0%' })
+
+      const pinEnd = vw <= 743 ? '+=90%' : '+=150%'
       ScrollTrigger.create({ trigger: '.hero__pin', start: 'top top', end: pinEnd, pin: true, anticipatePin: 1 })
 
       const buildScroll = contextSafe!(() => {
@@ -135,6 +152,10 @@ export default function Hero({ hours }: { hours: string }) {
               onUpdate: (self) => {
                 const t = self.progress > 0.8 ? 'dark' : 'yellow'
                 if (hero.dataset.theme !== t) hero.dataset.theme = t
+                if (!split && self.direction > 0 && self.progress > 0.02) {
+                  split = true
+                  setActive(SPLIT_CLIP)
+                } else if (split && self.progress < 0.005) split = false
               },
             },
           })
@@ -150,10 +171,6 @@ export default function Hero({ hours }: { hours: string }) {
           .to('.hx-window', { '--hx-in': 0, duration: 0.3, ease: 'power2.in' }, 0.68)
       })
 
-      stopScroll()
-      gsap.set('.hx-window', { '--hx-in': 0 })
-      gsap.set('.hx-ribbon--top', { y: midTop, scaleY: 0, transformOrigin: '50% 100%' })
-      gsap.set('.hx-ribbon--bottom', { y: midBot, scaleY: 0, transformOrigin: '50% 0%' })
       const tl = gsap.timeline({
         paused: true,
         defaults: { ease: 'expo.out' },
@@ -162,23 +179,25 @@ export default function Hero({ hours }: { hours: string }) {
           buildScroll()
         },
       })
-      tl.to(cover, { autoAlpha: 0, duration: 0.6, ease: 'power2.out' }, 0)
+      // the window stays inset (CSS) until now: a full-viewport first paint would not count as LCP
+      tl.set('.hx-window', { '--hx-in': 0 }, 0)
+        .to(cover, { autoAlpha: 0, duration: 0.6, ease: 'power2.out' }, 0)
         .to(ribbons, { autoAlpha: 1, duration: 0.01 }, 0.15)
         .to(ribbons, { scaleY: 1, duration: 1.1 }, 0.15)
 
       const items = Array.from(hero.querySelectorAll<HTMLElement>('.hx-item'))
-      items.forEach((it) => initRolling(it))
       const rollAll = () => {
         if (document.hidden || hero.getBoundingClientRect().bottom < 0) return
-        const vw = window.innerWidth
+        const w = window.innerWidth
         const visible = items.filter((it) => {
           const r = it.getBoundingClientRect()
-          return r.width > 0 && r.right > 0 && r.left < vw
+          return r.width > 0 && r.right > 0 && r.left < w
         })
+        initRollingAll(visible)
         visible.forEach((it) => roll(it, { duration: 0.9, stagger: 0.045 }))
       }
       tl.call(rollAll, undefined, 0.5)
-      const rollTimer = window.setInterval(rollAll, 3600)
+      let rollTimer = 0
 
       let seen = false
       try {
@@ -190,6 +209,7 @@ export default function Hero({ hours }: { hours: string }) {
         if (!alive) return
         stopScroll()
         tl.play()
+        rollTimer = window.setInterval(rollAll, 3600)
       })
 
       return () => {
@@ -211,7 +231,7 @@ export default function Hero({ hours }: { hours: string }) {
         <div className="hx-window">
           {CLIPS.slice(0, count).map((k, i) => (
             <div key={k} className={`hx-clip ${i === active ? 'is-active' : ''}`}>
-              <MediaFill k={k} active={i === active} priority={i === 0} w={2000} />
+              <MediaFill k={k} active={i === active} warm={i === SPLIT_CLIP || i === (active + 1) % count} priority={i === 0} posterImg={i === 0} w={2000} />
             </div>
           ))}
           <div className="hx-shade" />
@@ -233,12 +253,8 @@ export default function Hero({ hours }: { hours: string }) {
           <span className="sr-only">{hours}</span>
         </div>
 
-        <div className="hx-ribbon hx-ribbon--top">
-          <Track text={LINE} n={3} />
-        </div>
-        <div className="hx-ribbon hx-ribbon--bottom">
-          <Track text={LINE} n={3} />
-        </div>
+        <div className="hx-ribbon hx-ribbon--top">{TRACK}</div>
+        <div className="hx-ribbon hx-ribbon--bottom">{TRACK}</div>
 
         <div className="hx-cover" aria-hidden="true" />
       </div>

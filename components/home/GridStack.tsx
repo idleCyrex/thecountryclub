@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
+import { useNear, refreshSoon } from '@/lib/lazy'
 import { gsap, ScrollTrigger, useGSAP, prefersReduced } from '@/lib/gsap'
 import { brushWrite, initRolling, roll } from '@/lib/motion'
 import type { Facility } from '@/content/site'
@@ -32,18 +33,12 @@ const CELLS: string[] = []
 const TOP_KEY: Record<string, string> = {
   'THE CLUB': 'aerial-club', 'THE GYM': 'gym-rack', 'THE COURTS': 'tennis-court', 'THE POOL': 'pool', 'THE SPA': 'spa-stones',
 }
-const MUST = new Set([...Object.values(TOP_KEY)])
-const MOBILE_KEEP = new Set<number>()
-{
-  let o = 0
-  CELLS.forEach((k, i) => {
-    if (MUST.has(k) || k.startsWith('crew-') || o++ % 3 === 0) MOBILE_KEEP.add(i)
-  })
-  for (let i = 1; MOBILE_KEEP.size < 20 && i < CELLS.length; i += 2) MOBILE_KEEP.add(i)
-}
 const WORDS = ['THE CLUB', 'THE GYM', 'THE COURTS', 'THE POOL', 'THE SPA']
 const REVEAL = 0.7
 const LIVE = 1.1
+const WORD_HREF: Record<string, string> = {
+  'THE CLUB': '/club-fitness', 'THE GYM': '/club-fitness', 'THE COURTS': '/tennis', 'THE POOL': '/pool', 'THE SPA': '/spa',
+}
 const CARD_KEY: Record<string, string> = {
   'gym-floor': 'gym-floor', 'tennis-courts': 'tennis-night', 'members-pool': 'pool', 'impulse-spa': 'spa-stones', 'locker-rooms': 'spa-clinic',
 }
@@ -51,17 +46,16 @@ const CARD_POS: Record<string, string> = { 'tennis-night': '50% 55%', 'spa-clini
 
 export default function GridStack({ facilities }: { facilities: Facility[] }) {
   const root = useRef<HTMLElement>(null)
+  const near = useNear(root)
 
   useGSAP(
     () => {
       const el = root.current
-      if (!el) return
+      if (!el || !near) return
       const stage = el.querySelector<HTMLElement>('.pile__stage')!
       const grid = el.querySelector<HTMLElement>('.gs__grid')!
       const word = el.querySelector<HTMLElement>('.pile__word')!
-      const tiles = gsap.utils
-        .toArray<HTMLElement>('.pile__photo', el)
-        .filter((t) => getComputedStyle(t).display !== 'none')
+      const tiles = gsap.utils.toArray<HTMLElement>('.pile__photo', el)
       const scrim = el.querySelector<HTMLElement>('.pile__scrim')!
       const byKey = new Map(tiles.map((t) => [t.dataset.k!, t]))
       const baseZ = new Map(tiles.map((t) => [t, Number(t.style.zIndex)]))
@@ -169,20 +163,49 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         )
       }
 
-      const stop = pile()
+      const mm = gsap.matchMedia()
+      mm.add('(min-width: 744px)', () => pile())
       cards()
-      return stop
+      refreshSoon()
+      return () => mm.revert()
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   return (
     <section className="pile" data-theme="dark" ref={root}>
+      <div className="pile-m">
+        <Brush text="Choose your game" className="pile-m__brush" />
+        <ul className="pile-m__track">
+          {WORDS.map((w) => (
+            <li key={w} className="pile-m__item">
+              <TransitionLink href={WORD_HREF[w]} className="pile-m__card">
+                <MediaFill
+                  k={TOP_KEY[w]}
+                  w={900}
+                  sizes="80vw"
+                  className="pile-m__img"
+                  style={{ objectPosition: POS[TOP_KEY[w]] ?? '50% 40%' }}
+                />
+                <span className="pile-m__word">{w}</span>
+              </TransitionLink>
+            </li>
+          ))}
+        </ul>
+        <div className="pile-m__actions">
+          <TransitionLink className="btn" href="/contact">
+            Book a visit
+          </TransitionLink>
+          <TransitionLink className="btn btn--outline" href="/contact">
+            Membership
+          </TransitionLink>
+        </div>
+      </div>
       <div className="pile__pin">
         <div className="pile__stage">
           <div className="gs__grid">
             {CELLS.map((k, i) => (
-              <figure key={i} className={`pile__photo${MOBILE_KEEP.has(i) ? '' : ' is-desk'}`} data-k={k} style={{ zIndex: i + 1 }}>
+              <figure key={i} className="pile__photo" data-k={k} style={{ zIndex: i + 1 }}>
                 <MediaFill k={k} w={800} sizes="(max-width: 743px) 25vw, 20vw" style={{ objectPosition: POS[k] ?? '50% 35%' }} />
               </figure>
             ))}

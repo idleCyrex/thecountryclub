@@ -3,6 +3,7 @@
 import { useRef, type CSSProperties } from 'react'
 import { gsap, ScrollTrigger, useGSAP, prefersReduced } from '@/lib/gsap'
 import { initRolling, roll } from '@/lib/motion'
+import { useNear, refreshSoon } from '@/lib/lazy'
 import type { ClassItem } from '@/content/site'
 import Rolling from '../ui/Rolling'
 import MediaFill from '../ui/MediaFill'
@@ -14,20 +15,24 @@ const SPEED = [1, 1.35, 0.8, 1.2, 0.9, 1.3, 0.85]
 const LANES = ['2vw', '75vw', '3vw', '74vw', '2vw', '75vw', '3vw']
 const LIFT = [0, 6, 2, 9, 4, 8, 1]
 
+/** Parse every target's transform in one read pass so later tweens only write. */
+const warm = (els: Element[]) => els.forEach((t) => gsap.getProperty(t, 'y'))
+
 export default function ClassesParallax({ classes, copy }: { classes: ClassItem[]; copy: string }) {
   const root = useRef<HTMLElement>(null)
+  const near = useNear(root)
 
   useGSAP(
     () => {
       const el = root.current
-      if (!el || prefersReduced()) return
+      if (!near || !el || prefersReduced()) return
       if (window.innerWidth <= 743) {
         const mword = el.querySelector<HTMLElement>('.classes__word')!
         const list = el.querySelector<HTMLElement>('.classes__cards')!
         const count = el.querySelector<HTMLElement>('.classes__cur')
         const fill = el.querySelector<HTMLElement>('.classes__fill')
         const mcards = gsap.utils.toArray<HTMLElement>('.ccard', el)
-        initRolling(mword)
+        warm([...mword.querySelectorAll('.char'), ...el.querySelectorAll('.classes__title > *'), ...mcards])
 
         const onScroll = () => {
           const first = mcards[0]
@@ -35,11 +40,13 @@ export default function ClassesParallax({ classes, copy }: { classes: ClassItem[
           const gap = mcards[1] ? mcards[1].offsetLeft - first.offsetLeft : first.offsetWidth
           const idx = Math.min(mcards.length - 1, Math.max(0, Math.round(list.scrollLeft / gap)))
           const max = list.scrollWidth - list.clientWidth
-          if (count) count.textContent = String(idx + 1).padStart(2, '0')
+          const n = String(idx + 1).padStart(2, '0')
+          if (count && count.textContent !== n) count.textContent = n
           if (fill) fill.style.transform = `scaleX(${max > 0 ? Math.min(1, Math.max(0, list.scrollLeft / max)) : 0})`
         }
-        list.addEventListener('scroll', onScroll, { passive: true })
         onScroll()
+        initRolling(mword)
+        list.addEventListener('scroll', onScroll, { passive: true })
 
         let mtimer = 0
         const mst = ScrollTrigger.create({
@@ -65,19 +72,35 @@ export default function ClassesParallax({ classes, copy }: { classes: ClassItem[
         }
       }
       const word = el.querySelector<HTMLElement>('.classes__word')!
+      const title = el.querySelector<HTMLElement>('.classes__title')!
       const cards = gsap.utils.toArray<HTMLElement>('.ccard', el)
+      warm([...word.querySelectorAll('.char'), title, ...cards])
+      // card heights cached so each card's tween init doesn't force a layout after the previous card's write
+      let hs = cards.map((c) => c.offsetHeight)
       initRolling(word)
+      // queued ahead of the pin so this sorted refresh runs before (and supersedes) ScrollTrigger's own pin refresh
+      refreshSoon()
 
       const tl = gsap.timeline({
         defaults: { ease: 'none' },
-        scrollTrigger: { trigger: '.classes__pin', start: 'top top', end: '+=420%', pin: true, scrub: 0.6, invalidateOnRefresh: true },
+        scrollTrigger: {
+          trigger: '.classes__pin',
+          start: 'top top',
+          end: '+=420%',
+          pin: true,
+          scrub: 0.6,
+          invalidateOnRefresh: true,
+          onRefreshInit: () => {
+            hs = cards.map((c) => c.offsetHeight)
+          },
+        },
       })
-      tl.fromTo('.classes__title', { scale: 0.86, autoAlpha: 0, y: 60 }, { scale: 1, autoAlpha: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0)
+      tl.fromTo(title, { scale: 0.86, autoAlpha: 0, y: 60 }, { scale: 1, autoAlpha: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 0)
       cards.forEach((c, i) => {
         const s = SPEED[i % SPEED.length]
         const d = 2.4 / s
         const at = 0.15 + i * 0.7
-        tl.fromTo(c, { y: 0 }, { y: () => -(window.innerHeight + c.offsetHeight * 1.2), duration: d }, at)
+        tl.fromTo(c, { y: 0 }, { y: () => -(window.innerHeight + hs[i] * 1.2), duration: d }, at)
       })
 
       let timer = 0
@@ -95,7 +118,7 @@ export default function ClassesParallax({ classes, copy }: { classes: ClassItem[
         st.kill()
       }
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   return (

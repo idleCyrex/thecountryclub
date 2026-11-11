@@ -1,5 +1,5 @@
 .classes { position: relative; z-index: 1; background: var(--dark); }
-.classes .classes__pin { height: 100svh; background: var(--dark); }
+.classes .classes__pin { height: 100vh; height: 100lvh; background: var(--dark); }
 .classes .classes__title { z-index: 2; }
 .classes .classes__cards { z-index: 3; }
 .classes .ccard, .classes .ccard--over { z-index: 3; }

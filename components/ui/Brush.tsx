@@ -4,6 +4,9 @@ import { useRef, type CSSProperties } from 'react'
 import { gsap, ScrollTrigger, useGSAP, prefersReduced } from '@/lib/gsap'
 import { brushWrite } from '@/lib/motion'
 import { whenRevealed } from '@/lib/curtain'
+import { useNear } from '@/lib/lazy'
+
+const OFF = { current: null }
 
 interface Props {
   text: string
@@ -21,11 +24,14 @@ interface Props {
 export default function Brush({ text, className = '', style, dark, mode = 'view', delay = 0, rotate }: Props) {
   const ref = useRef<HTMLSpanElement>(null)
   const words = text.split(/\s+/).filter(Boolean)
+  // view: the trigger is built once near; enter: already deferred to the reveal; none: no observer at all
+  const near = useNear(mode === 'view' ? ref : OFF)
+  const go = mode === 'enter' || near
 
   useGSAP(
     () => {
       const el = ref.current
-      if (!el || mode === 'none' || prefersReduced()) return
+      if (!el || !go || mode === 'none' || prefersReduced()) return
       let alive = true
       let st: ScrollTrigger | undefined
       let tw: gsap.core.Tween | gsap.core.Timeline | undefined
@@ -43,7 +49,7 @@ export default function Brush({ text, className = '', style, dark, mode = 'view'
         gsap.set(el.querySelectorAll('.split-block'), { clearProps: 'clipPath' })
       }
     },
-    { dependencies: [text, mode] },
+    { dependencies: [text, mode, go] },
   )
 
   const s = rotate === undefined ? style : { ...style, transform: `rotate(${rotate}deg)` }

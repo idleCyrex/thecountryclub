@@ -3,6 +3,7 @@
 import { useRef, type CSSProperties } from 'react'
 import { gsap, useGSAP, prefersReduced } from '@/lib/gsap'
 import { brushWrite } from '@/lib/motion'
+import { useNear } from '@/lib/lazy'
 import Brush from './ui/Brush'
 import Marquee from './ui/Marquee'
 
@@ -16,17 +17,20 @@ interface Props {
 /** Type section: the word as two bold tickers running in opposite directions, a brush line over them, a caption below. */
 export default function AxisWord({ word, brush, theme = 'yellow', caption }: Props) {
   const root = useRef<HTMLElement>(null)
+  const near = useNear(root)
 
   useGSAP(
     () => {
-      if (prefersReduced()) return
+      const el = root.current
+      if (!near || !el || prefersReduced()) return
+      gsap.utils.toArray<Element>('.axis__ticker, .axis__caption', el).forEach((t) => gsap.getProperty(t, 'y'))
       // two bold tickers run past and the brush writes on as the section comes into view
-      const tl = gsap.timeline({ scrollTrigger: { trigger: root.current, start: 'top 70%', once: true } })
+      const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: 'top 70%', once: true } })
       tl.fromTo('.axis__ticker', { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.8, ease: 'expo.out' }, 0)
-      if (brush) tl.add(brushWrite(root.current!.querySelector('.axis__brush'), { duration: 0.45, stagger: 0.15 }), 0.35)
+      if (brush) tl.add(brushWrite(el.querySelector('.axis__brush'), { duration: 0.45, stagger: 0.15 }), 0.35)
       if (caption) tl.fromTo('.axis__caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 0.6)
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   return (

@@ -4,6 +4,9 @@ import { useRef, type CSSProperties, type ElementType } from 'react'
 import { gsap, ScrollTrigger, useGSAP, prefersReduced } from '@/lib/gsap'
 import { initRolling, killRolling, roll, rollEvery, rollingHTML } from '@/lib/motion'
 import { whenRevealed } from '@/lib/curtain'
+import { useNear } from '@/lib/lazy'
+
+const OFF = { current: null }
 
 type Mode = 'enter' | 'view' | 'none'
 
@@ -28,18 +31,21 @@ interface Props {
  */
 export default function Rolling({ text, as: Tag = 'h2', className = '', style, mode = 'view', delay = 0, every, words }: Props) {
   const ref = useRef<HTMLElement>(null)
+  // view: everything waits until near; enter: priming waits for the reveal (CSS keeps the chars hidden until is-ready)
+  const near = useNear(mode === 'view' ? ref : OFF)
+  const go = mode === 'enter' || near
 
   useGSAP(
     () => {
       const el = ref.current
-      if (!el || mode === 'none' || prefersReduced()) return
+      if (!el || !go || mode === 'none' || prefersReduced()) return
       let alive = true
       let st: ScrollTrigger | undefined
       let loop: ScrollTrigger | undefined
       let stop: (() => void) | undefined
       let call: gsap.core.Tween | undefined
 
-      initRolling(el, '')
+      if (mode === 'view') initRolling(el, '')
       const start = () => {
         if (!alive) return
         roll(el)
@@ -62,7 +68,9 @@ export default function Rolling({ text, as: Tag = 'h2', className = '', style, m
         if (!alive) return
         if (mode === 'enter') {
           whenRevealed().then(() => {
-            if (alive) call = gsap.delayedCall(delay, start)
+            if (!alive) return
+            initRolling(el, '')
+            call = gsap.delayedCall(delay, start)
           })
         } else {
           st = ScrollTrigger.create({
@@ -85,7 +93,7 @@ export default function Rolling({ text, as: Tag = 'h2', className = '', style, m
         killRolling(el)
       }
     },
-    { dependencies: [text, mode, every, words?.join('|')], revertOnUpdate: true },
+    { dependencies: [text, mode, every, words?.join('|'), go], revertOnUpdate: true },
   )
 
   return (

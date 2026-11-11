@@ -27,22 +27,29 @@ const SAMPLES = [...Array.from({ length: 17 }, (_, i) => i * 0.25), 4.5, 5, 5.5,
 const pct = (t: number) => `${((t / DUR) * 100).toFixed(2)}%`
 const smooth = (name: string, fn: (v: number) => string) =>
   `@keyframes ${name}{${SAMPLES.map((t) => `${pct(t)}{transform:${fn(curve(t))}}`).join('')}}`
-/** Holds each value, then rolls to the next over `roll` seconds (or continuously when values come faster than that). */
-const ticks = (name: string, marks: number[], fn: (i: number) => string, roll: number) => {
+/**
+ * Holds each value, then rolls to the next over `roll` seconds (or continuously when values come faster than that).
+ * `wrap`: the strip repeats its first cell at index `wrap`, so after rolling onto it the strip snaps back to 0.
+ */
+const ticks = (name: string, marks: number[], fn: (i: number) => string, roll: number, wrap = 0) => {
+  const at = (i: number) => (wrap ? i % wrap : i)
   const f = [`0%{transform:${fn(0)}}`]
   marks.forEach((v, i) => {
     const t = timeAt(v)
     const prev = i ? timeAt(marks[i - 1]) : 0
     const start = Math.max(prev, t - roll)
-    if (start > prev) f.push(`${pct(start)}{transform:${fn(i)}}`)
-    f.push(`${pct(t)}{transform:${fn(i + 1)}}`)
+    if (start > prev) f.push(`${pct(start)}{transform:${fn(at(i))}}`)
+    if (wrap && (i + 1) % wrap === 0) f.push(`${pct(t)}{transform:${fn(wrap)}}`, `${pct(t + 0.002)}{transform:${fn(0)}}`)
+    else f.push(`${pct(t)}{transform:${fn(at(i + 1))}}`)
   })
-  f.push(`100%{transform:${fn(marks.length)}}`)
+  f.push(`100%{transform:${fn(at(marks.length))}}`)
   return `@keyframes ${name}{${f.join('')}}`
 }
 const upTo = (n: number, every = 1) => Array.from({ length: Math.floor(n / every) }, (_, i) => (i + 1) * every)
 
 const ones = (v: number) => `translateY(${(-v * U).toFixed(3)}em)`
+/** ones strip position (0..10) for a running value */
+const onesAt = (v: number) => v - 10 * Math.floor(v / 10)
 const tens = (i: number) => `translateY(${(-i * U).toFixed(3)}em)`
 const fill = (v: number) => `scaleX(${(v / 100).toFixed(4)})`
 const roll = (v: number) => `translateX(${v.toFixed(2)}%)`
@@ -50,7 +57,7 @@ const turn = (v: number) => `rotate(${(v * 9).toFixed(1)}deg)`
 const say = (i: number) => `translateY(${-i * 1.4}em)`
 
 const KEYFRAMES = [
-  ticks('pl-ones', upTo(89), (i) => ones(i), 0.09),
+  ticks('pl-ones', upTo(89), ones, 0.09, 10),
   ticks('pl-tens', upTo(89, 10), tens, 0.16),
   smooth('pl-fill', fill),
   smooth('pl-roll', roll),
@@ -58,7 +65,7 @@ const KEYFRAMES = [
   ticks('pl-say', [25, 50, 75], say, 0.3),
 ].join('')
 
-const ONES = Array.from({ length: 101 }, (_, k) => k % 10)
+const ONES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 const TENS = [' ', 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
 /** First-load screen: odometer counter + ball rolling along the line, then the panel lifts. */
@@ -86,6 +93,9 @@ export default function Preloader() {
       count: q('.pl-count'),
     }
     const reduced = prefersReduced()
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection
+    // phones and slow links: lift as soon as the app is interactive instead of waiting on fonts and media
+    const fast = window.matchMedia('(max-width: 743px)').matches || !!conn?.saveData || /(^|-)(2g|3g)$/.test(conn?.effectiveType ?? '')
     let alive = true
     let finished = false
     // true when the page was (nearly) loaded by the time React took over: then the loader just zips out
@@ -93,7 +103,7 @@ export default function Preloader() {
     stopScroll()
 
     const render = (v: number) => {
-      parts.ones.style.transform = ones(v)
+      parts.ones.style.transform = ones(onesAt(v))
       parts.tens.style.transform = tens(Math.min(10, Math.floor(v / 10)))
       parts.hund.style.transform = tens(v >= 100 ? 1 : 0)
       parts.fill.style.transform = fill(v)
@@ -131,10 +141,15 @@ export default function Preloader() {
 
     const countOut = () => {
       if (!alive) return
-      // pick up exactly where the CSS odometer is showing right now
+      // pick up exactly where the CSS odometer is showing right now: the ones strip gives the digit,
+      // the animation clock the decade
+      const anim = parts.ones.getAnimations?.()[0]
+      const now = anim && typeof anim.currentTime === 'number' ? anim.currentTime : performance.now()
+      const approx = curve(Math.min(DUR, now / 1000))
       const fs = parseFloat(getComputedStyle(parts.count).fontSize) || 1
-      const shown = -new DOMMatrix(getComputedStyle(parts.ones).transform).m42 / (fs * U)
-      const from = Math.min(99, Math.max(0, Number.isFinite(shown) ? shown : curve(Math.min(DUR, performance.now() / 1000))))
+      const pos = -new DOMMatrix(getComputedStyle(parts.ones).transform).m42 / (fs * U)
+      const shown = Number.isFinite(pos) ? pos + 10 * Math.round((approx - pos) / 10) : approx
+      const from = Math.min(99, Math.max(0, shown))
       el.classList.add('is-js')
       render(from)
       const s = { v: from }
@@ -156,6 +171,11 @@ export default function Preloader() {
     }
     const begin = () => {
       if (!alive) return
+      if (fast) {
+        quick = true
+        finish()
+        return
+      }
       const tasks: Promise<unknown>[] = []
       if (document.fonts && document.fonts.status !== 'loaded') tasks.push(document.fonts.ready)
       document.querySelectorAll<HTMLImageElement>('main img').forEach((img) => {

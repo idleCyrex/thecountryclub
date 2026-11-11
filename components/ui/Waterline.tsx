@@ -3,6 +3,9 @@
 import { useId, useRef, type CSSProperties, type ReactNode } from 'react'
 import { gsap, useGSAP, prefersReduced } from '@/lib/gsap'
 import { waterline, waveCrest, waveMask } from '@/lib/motion'
+import { useNear } from '@/lib/lazy'
+
+const OFF = { current: null }
 
 const MASKS = { '--wl-up': waveMask('up'), '--wl-down': waveMask('down'), '--wl-crest-img': waveCrest() } as CSSProperties
 
@@ -35,17 +38,18 @@ export default function Waterline({
 }: Props) {
   const root = useRef<HTMLDivElement>(null)
   const fid = `wl-${useId().replace(/[^\w-]/g, '')}`
+  const near = useNear(drive ? root : OFF)
 
   useGSAP(
     () => {
       const el = root.current
-      if (!el || !drive) return
+      if (!el || !drive || !near) return
       const animate = !prefersReduced()
       const w = waterline(el, { animate, low: rise && animate })
       if (animate && rise) w.rise(gsap.timeline({ scrollTrigger: { trigger: el, start, end, scrub: 0.6 } }))
       return () => w.kill()
     },
-    { scope: root, dependencies: [lines.join('|'), rise, drive, start, end] },
+    { scope: root, dependencies: [lines.join('|'), rise, drive, start, end, near] },
   )
 
   const spans = lines.map((l, i) => (

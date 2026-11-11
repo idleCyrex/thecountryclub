@@ -1,9 +1,10 @@
 'use client'
 
 import { drawOnScroll } from '@/lib/draw'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { gsap, useGSAP, prefersReduced } from '@/lib/gsap'
+import { useGSAP, prefersReduced } from '@/lib/gsap'
+import { useNear, refreshSoon } from '@/lib/lazy'
 import { SETTINGS, type HoursRow } from '@/content/site'
 import { clubWeekday, rowForDay } from './HoursTable'
 import Waterline from './ui/Waterline'
@@ -49,38 +50,56 @@ export default function Footer() {
   const root = useRef<HTMLElement>(null)
   const pathname = usePathname()
   const [today, setToday] = useState({ gym: -1, spa: -1 })
+  const near = useNear(root)
 
   useEffect(() => {
     const d = clubWeekday()
     setToday({ gym: rowForDay(SETTINGS.hours.gym, d), spa: rowForDay(SETTINGS.hours.spa, d) })
   }, [])
 
-  useLayoutEffect(() => {
-    const el = root.current?.querySelector<HTMLElement>('.footer__wl')
+  // fit the waterline to the viewport once the footer comes near. The observer callback runs after layout, so the
+  // reads never force a reflow during hydration, and (unlike useNear) it does not wait for the reveal: no visible jump.
+  useEffect(() => {
+    const host = root.current
+    const el = host?.querySelector<HTMLElement>('.footer__wl')
     const text = el?.querySelector<HTMLElement>('.wl__sizer')
-    if (!el || !text) return
+    if (!host || !el || !text) return
+    let alive = true
     const fit = () => {
       const fs = parseFloat(getComputedStyle(text).fontSize)
       const widest = Math.max(...Array.from(text.querySelectorAll<HTMLElement>('.wl__ln'), (n) => n.offsetWidth))
-      if (!fs || !widest) return
+      if (!fs || !widest) return false
       const target = window.innerWidth * (window.innerWidth < 744 ? 0.86 : 0.46)
       const next = (target / widest) * fs
-      if (Math.abs(next - fs) < 0.5) return
+      if (Math.abs(next - fs) < 0.5) return false
       el.style.setProperty('--fs', `${next}px`)
-      window.dispatchEvent(new Event('resize'))
+      return true
     }
-    fit()
-    document.fonts?.ready.then(fit)
-    window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return
+        io.disconnect()
+        fit()
+        // a real resize already makes ScrollTrigger refresh after this; a late font swap needs one
+        document.fonts?.ready.then(() => alive && fit() && refreshSoon())
+        window.addEventListener('resize', fit)
+      },
+      { rootMargin: '150% 0px' },
+    )
+    io.observe(host)
+    return () => {
+      alive = false
+      io.disconnect()
+      window.removeEventListener('resize', fit)
+    }
   }, [])
 
-  useLayoutEffect(() => {
+  // no sync measure: the ResizeObserver's first callback runs after layout and does it
+  useEffect(() => {
     const el = root.current
     const keep = el?.querySelector<HTMLElement>('.footer__social')
     if (!el || !keep) return
     const zone = () => el.style.setProperty('--lines-h', `${Math.round(keep.getBoundingClientRect().top - el.getBoundingClientRect().top)}px`)
-    zone()
     const ro = new ResizeObserver(zone)
     ro.observe(el)
     return () => ro.disconnect()
@@ -88,10 +107,10 @@ export default function Footer() {
 
   useGSAP(
     () => {
-      if (prefersReduced()) return
+      if (!near || prefersReduced()) return
       drawOnScroll('.footer__lines path', { trigger: root.current, start: 'top 85%', end: 'bottom bottom', scrub: 0.6 }, 0.1)
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   const year = new Date().getFullYear()

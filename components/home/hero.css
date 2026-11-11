@@ -56,7 +56,6 @@ html:not(.motion) .hero .hx-cover { display: none; }
   @supports (width: round(1.5px, 1px)) { .hero .hx { --rb: round(min(20vw, 15svh), 1px); } }
   .hero .hx-window { --hx-in: 4; }
   .hero .hx-loc { display: none; }
-  .hero .hx-item.rolling.hx-item--wide { display: none; }
   .hero .hx-content { padding: 0 5vw; }
   .hero .hx-title { font-size: clamp(40px, min(14vw, 11svh), 90px); }
   .hero .hx-sub { font-size: clamp(14px, 4.2vw, 22px); }

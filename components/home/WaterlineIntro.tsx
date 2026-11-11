@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { gsap, useGSAP, prefersReduced } from '@/lib/gsap'
 import { brushWrite, waterline } from '@/lib/motion'
+import { useNear } from '@/lib/lazy'
 import Brush from '../ui/Brush'
 import Waterline from '../ui/Waterline'
 import './intro.css'
@@ -12,26 +13,32 @@ const LINES = ['LIVE', 'THE CLUB', 'LIFE']
 
 export default function WaterlineIntro({ copy }: { copy: string }) {
   const root = useRef<HTMLElement>(null)
+  const near = useNear(root)
 
   useGSAP(
     () => {
       const el = root.current
       const wl = el?.querySelector<HTMLElement>('.wl')
-      if (!el || !wl) return
+      if (!near || !el || !wl) return
       const reduced = prefersReduced()
       const brush = el.querySelector<HTMLElement>('.intro__brush')
       const blocks = Array.from(el.querySelectorAll<HTMLElement>('.intro__brush .split-block'))
+      const copyEl = el.querySelector<HTMLElement>('.intro__copy')
       const fit = () => {
         if (!brush) return
-        brush.style.fontSize = ''
+        if (brush.style.fontSize) brush.style.fontSize = ''
         const max = wl.offsetWidth * 0.5
         const w = brush.offsetWidth
         if (w > max) brush.style.fontSize = `${(parseFloat(getComputedStyle(brush).fontSize) * max) / w}px`
       }
+
+      // layout reads first (fit, transform parse), then the writes
+      fit()
+      if (copyEl && !reduced) gsap.getProperty(copyEl, 'y')
+      if (!reduced) drawOnScroll('.wander path', { trigger: el, start: 'top 70%', end: 'bottom 40%', scrub: 0.6 })
       const w = waterline(wl, { animate: !reduced, low: !reduced })
       window.addEventListener('resize', fit)
-      fit()
-      document.fonts?.ready.then(fit)
+      if (document.fonts?.status !== 'loaded') document.fonts?.ready.then(fit)
       const off = () => {
         window.removeEventListener('resize', fit)
         w.kill()
@@ -49,11 +56,9 @@ export default function WaterlineIntro({ copy }: { copy: string }) {
       tl.add(brushWrite(brush, { duration: 0.6, stagger: 0.25 }), 1.5)
       blocks.forEach((b, i) => tl.set(b, { visibility: 'visible' }, 1.5 + i * 0.25))
       tl.fromTo('.intro__copy', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.6 }, 1.9)
-
-      drawOnScroll('.wander path', { trigger: el, start: 'top 70%', end: 'bottom 40%', scrub: 0.6 })
       return off
     },
-    { scope: root },
+    { scope: root, dependencies: [near] },
   )
 
   return (

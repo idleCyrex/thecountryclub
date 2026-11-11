@@ -1,9 +1,9 @@
 /* ===== 4. FITNESS / STRONG: squash-stretch words, letters-as-windows zoom, tinted columns, 3D tennis balls ===== */
 .bold.bf { position: relative; background: var(--warm-yellow, #10afc1); }
 /* curtain cut: the stage's scroll-out is skipped (hidden on leave); the next section starts where the pin ends */
-html.motion .bold.bf { z-index: 2; isolation: isolate; margin-bottom: -100svh; }
+html.motion .bold.bf { z-index: 2; isolation: isolate; margin-bottom: -100vh; margin-bottom: -100lvh; }
 .bf .pin-spacer { position: relative; z-index: 0; }
-.bf .bf-stage { position: relative; height: 100svh; overflow: hidden; background: var(--dark, #06141a); }
+.bf .bf-stage { position: relative; height: 100vh; height: 100lvh; overflow: hidden; background: var(--dark, #06141a); }
 .bf .bf-stage > * { position: absolute; inset: 0; }
 .bold.bf:not(.is-near) .bf-stage { visibility: hidden; }
 

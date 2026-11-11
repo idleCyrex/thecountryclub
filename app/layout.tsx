@@ -11,7 +11,7 @@ import { SETTINGS } from '@/content/site'
 import { SITE_URL } from '@/lib/site'
 import { media } from '@/lib/media'
 
-const flex = Roboto_Flex({ subsets: ['latin'], axes: ['wdth', 'opsz'], variable: '--font-flex', display: 'swap' })
+const flex = Roboto_Flex({ subsets: ['latin'], axes: ['wdth'], variable: '--font-flex', display: 'swap' })
 const slab = Roboto_Slab({ subsets: ['latin'], weight: ['800'], variable: '--font-roboto-slab', display: 'swap', preload: false })
 const hanken = Hanken_Grotesk({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-hanken', display: 'swap' })
 const marker = Permanent_Marker({ subsets: ['latin'], weight: '400', variable: '--font-marker', display: 'swap', preload: false })
