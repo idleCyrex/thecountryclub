@@ -72,3 +72,12 @@ html:not(.motion) .hero .hx-cover { display: none; }
   .hero .hx-content { bottom: calc(var(--rb) + 100lvh - 100dvh); }
   .hero .hx-band { top: 50dvh; }
 }
+@media (max-width: 743px) {
+  html.motion .hero .hx-ribbon { opacity: 1; visibility: visible; }
+  html.motion .hero .hx-ribbon--top { transform: translateY(calc(50vh - var(--rb))); transform-origin: 50% 100%; }
+  html.motion .hero .hx-ribbon--bottom { transform: translateY(calc(var(--rb) - 50vh)); transform-origin: 50% 0%; }
+  @supports (height: 1dvh) {
+    html.motion .hero .hx-ribbon--top { transform: translateY(calc(50dvh - var(--rb))); }
+    html.motion .hero .hx-ribbon--bottom { transform: translateY(calc(var(--rb) - 50dvh)); }
+  }
+}

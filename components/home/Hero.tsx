@@ -112,6 +112,8 @@ export default function Hero({ hours }: { hours: string }) {
       const halves = tracks.map((t) => t.scrollWidth / 2)
       const rb0 = ribbons[0]?.offsetHeight ?? 0
       const tall = hero.offsetHeight > 0
+      // phones paint the middle band from the first frame (CSS); only desktop scales it in
+      const shown = vw <= 743
 
       const side = () => (window.innerWidth <= 760 ? 4 : 5.3)
       const rb = () => ribbons[0]?.offsetHeight ?? 0
@@ -132,8 +134,8 @@ export default function Hero({ hours }: { hours: string }) {
       })
 
       stopScroll()
-      gsap.set('.hx-ribbon--top', { y: tall ? Math.round(vh / 2) - rb0 : 0, scaleY: 0, transformOrigin: '50% 100%' })
-      gsap.set('.hx-ribbon--bottom', { y: tall ? Math.round(vh / 2) - (vh - rb0) : 0, scaleY: 0, transformOrigin: '50% 0%' })
+      gsap.set('.hx-ribbon--top', { y: tall ? Math.round(vh / 2) - rb0 : 0, scaleY: shown ? 1 : 0, transformOrigin: '50% 100%' })
+      gsap.set('.hx-ribbon--bottom', { y: tall ? Math.round(vh / 2) - (vh - rb0) : 0, scaleY: shown ? 1 : 0, transformOrigin: '50% 0%' })
 
       const pinEnd = vw <= 743 ? '+=90%' : '+=150%'
       ScrollTrigger.create({ trigger: '.hero__pin', start: 'top top', end: pinEnd, pin: true, anticipatePin: 1 })
