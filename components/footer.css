@@ -53,6 +53,8 @@
   .footer .footer__social li:nth-child(odd) { border-left: 0; }
   .footer .footer__social li:nth-child(n+3) { border-top: 1px solid var(--dark); }
   .footer .fs__sub { overflow-wrap: anywhere; }
+  .footer .fs__face { padding-inline: .5rem; }
+  .footer .fs__name { font-size: 7.6vw; }
   .footer .footer__info { grid-template-columns: 1fr; }
   .footer .fi { border-left: 0; border-top: 1px solid var(--dark); padding: 7vw 4vw; }
   .footer .fi:first-child { border-top: 0; }

@@ -45,7 +45,11 @@ html.motion .rolling[data-enter]:not(.is-ready) .char { transform: scaleY(0); }
 }
 .curtain__edge { position: absolute; left: 0; right: 0; top: 0; height: 3rem; background: var(--yellow); color: var(--dark); overflow: hidden; display: flex; align-items: center; }
 .curtain__edge .marquee__item { font-size: 1.7rem; }
-.curtain__mark { font-size: clamp(4rem, 15vw, 14rem); }
+.curtain__mark { font-size: clamp(4rem, 15vw, 14rem); text-align: center; }
+@media (max-width: 743px) {
+  .curtain__mark { font-size: 25vw; line-height: .9; }
+  .curtain__mark span { display: block; }
+}
 
 /* ===== 1. hero ===== */
 .hero { position: relative; }
@@ -63,7 +67,7 @@ html.motion .wander path, html.motion .footer__lines path { visibility: hidden; 
 .intro__brush { font-size: clamp(2.4rem, 5vw, 9rem); top: 67%; transform: rotate(-7deg); }
 .intro__copy { max-width: 34em; margin: 0; font-size: max(14px, 1.1vw); line-height: 1.35; color: var(--light-yellow); }
 @media (max-width: 743px) {
-  .intro .intro__wl { font-size: 34vw; }
+  .intro .intro__wl { font-size: 30vw; }
   .intro__brush { font-size: 9vw; }
 }
 
@@ -219,9 +223,9 @@ html:not(.motion) .footer__lines path { stroke-dashoffset: 0; }
 /* ===== inner pages ===== */
 .page-hero { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center; gap: clamp(1.5rem, 4vh, 3rem); padding: clamp(7rem, 18vh, 12rem) var(--pad) clamp(3rem, 8vh, 6rem); }
 .page-hero__head { position: relative; display: flex; justify-content: center; width: 100%; }
-.page-hero__title { font-size: min(calc(94vw / (var(--n) * .26)), 40svh); --wght: var(--wght-regular); color: var(--yellow); }
-.page-hero--lg .page-hero__title { font-size: min(calc(94vw / (var(--n) * .26)), 32svh); }
-.page-hero--md .page-hero__title { font-size: min(calc(94vw / (var(--n) * .26)), 26svh); }
+.page-hero__title { font-size: min(calc(94vw / (var(--n) * .42)), 40svh); --wght: var(--wght-regular); color: var(--yellow); }
+.page-hero--lg .page-hero__title { font-size: min(calc(94vw / (var(--n) * .42)), 32svh); }
+.page-hero--md .page-hero__title { font-size: min(calc(94vw / (var(--n) * .42)), 26svh); }
 .page-hero__brush { font-size: clamp(2.4rem, 7vw, 6.5rem); top: 72%; }
 .page-hero__intro { max-width: 52ch; }
 .page-hero__intro p { margin: 0; }
@@ -347,12 +351,12 @@ html:not(.motion) .footer__lines path { stroke-dashoffset: 0; }
 /* mobile: classes become a swipeable row of compact cards instead of a 7-card stack */
 @media (max-width: 743px) {
   .class-grid {
-    display: flex; align-items: flex-start; gap: 12px; width: calc(100% + 2 * var(--pad)); margin-inline: calc(var(--pad) * -1);
+    display: flex; align-items: stretch; gap: 12px; width: calc(100% + 2 * var(--pad)); margin-inline: calc(var(--pad) * -1);
     padding: 4px var(--pad) 10px; scroll-padding-inline: var(--pad);
     overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
   }
   .class-grid::-webkit-scrollbar { display: none; }
-  .class-card { flex: 0 0 84%; scroll-snap-align: start; gap: .65rem; padding-bottom: 1.4rem; }
+  .class-card { flex: 0 0 calc(100% + var(--pad) - 22px); scroll-snap-align: start; gap: .65rem; padding-bottom: 1.4rem; }
   .class-card__media { aspect-ratio: 16 / 10; }
   .class-card__icon { margin-top: .2rem; }
   .class-card__name { font-size: clamp(2rem, 10vw, 2.6rem); }
@@ -536,7 +540,7 @@ html:not(.motion) .footer__lines path { stroke-dashoffset: 0; }
 
 .cta-band { display: flex; flex-direction: column; align-items: center; gap: 2.5rem; padding: clamp(5rem, 14vh, 10rem) var(--pad); }
 .cta-band__title { position: relative; display: flex; justify-content: center; width: 100%; }
-.cta-band__word { font-size: min(calc(94vw / (var(--n) * .26)), 34svh); --wght: var(--wght-regular); }
+.cta-band__word { font-size: min(calc(94vw / (var(--n) * .42)), 34svh); --wght: var(--wght-regular); }
 [data-theme="dark"] .cta-band__word { color: var(--yellow); }
 .cta-band__brush { font-size: clamp(2.2rem, 6vw, 5.5rem); top: 74%; }
 .cta-band__actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }

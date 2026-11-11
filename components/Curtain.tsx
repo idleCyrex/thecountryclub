@@ -7,7 +7,9 @@ export default function Curtain() {
       <div className="curtain__edge">
         <Marquee text="BOOK YOUR VISIT NOW" duration={12} repeat={6} />
       </div>
-      <p className="curtain__mark display">COUNTRY CLUB</p>
+      <p className="curtain__mark display">
+        <span>COUNTRY</span> <span>CLUB</span>
+      </p>
     </div>
   )
 }

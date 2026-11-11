@@ -18,7 +18,7 @@ html.motion .spa-band .spa-band__frame rect { stroke-dashoffset: 1; visibility: 
 @media (max-width: 743px) {
   .spa-band { padding: 22vw var(--pad) 16vw; }
   .spa-band .spa-band__grid { grid-template-columns: 1fr; gap: 14vw; }
-  .spa-band .spa-band__h { font-size: 26vw; }
+  .spa-band .spa-band__h { font-size: 23vw; }
   .spa-band .spa-band__text { gap: 6vw; }
   .spa-band .spa-band__text .body-caps { font-size: 14px; }
   .spa-band .spa-band__actions { gap: 10px; }

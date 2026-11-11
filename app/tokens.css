@@ -23,17 +23,17 @@
   --white: #fff;
 
   /* fonts (next/font variables live on <html>) */
-  --font-display: var(--font-flex), "Roboto Flex", "Arial Narrow", sans-serif;
+  --font-display: var(--font-flex), "Archivo", "Arial Narrow", sans-serif;
   --font-body: var(--font-hanken), "Hanken Grotesk", system-ui, sans-serif;
   --font-brush: var(--font-marker), "Permanent Marker", cursive;
   --font-slab: var(--font-roboto-slab), "Roboto Slab", Rockwell, serif;  /* nav wordmark only */
 
-  /* axis limits: Roboto Flex wdth 25-151, wght 100-1000 (opsz auto from font-size) */
-  --wdth-min: 25;       /* true narrowest (hairline/tall effects) */
-  --wdth-cond: 45;      /* default display width: matches PP Formula Condensed proportions */
-  --wdth-mid: 75;
+  /* axis limits: Archivo wdth 62-125, wght 100-900 */
+  --wdth-min: 62;       /* true narrowest (hairline/tall effects) */
+  --wdth-cond: 62;      /* default display width: matches PP Formula Condensed proportions */
+  --wdth-mid: 85;
   --wdth-normal: 100;
-  --wdth-ext: 151;
+  --wdth-ext: 125;
   --wght-thin: 100;     /* hairline */
   --wght-light: 300;
   --wght-regular: 450;  /* default display weight (phive ~400) */

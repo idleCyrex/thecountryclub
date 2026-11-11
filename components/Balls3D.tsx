@@ -160,14 +160,13 @@ function sample(keys: Key[], p: number, axis: 1 | 2) {
   return (2 * t3 - 3 * t2 + 1) * k1[axis] + (t3 - 2 * t2 + t) * m1 + (-2 * t3 + 3 * t2) * k2[axis] + (t3 - t2) * m2
 }
 
-/** Branded rolling tennis balls (Three.js), scrubbed by the parent's scroll progress. CSS fallback without WebGL, on phones and under reduced motion. */
+/** Branded rolling tennis balls (Three.js), scrubbed by the parent's scroll progress. CSS fallback without WebGL and under reduced motion. */
 export default function Balls3D({ progress, className = '' }: Props) {
   const wrap = useRef<HTMLDivElement>(null)
   const [fallback, setFallback] = useState(false)
 
   useEffect(() => {
-    // purely decorative: phones get the static CSS balls instead of three.js + a WebGL context
-    if (prefersReduced() || window.innerWidth < 744) {
+    if (prefersReduced()) {
       setFallback(true)
       return
     }
