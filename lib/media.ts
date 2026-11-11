@@ -33,11 +33,15 @@ export function media(key: string, opts: MediaOpts = {}): string {
     t.push(`c_${opts.crop ?? (opts.h ? 'fill' : 'limit')}`)
     return `https://res.cloudinary.com/${CLOUD}/image/upload/${t.join(',')}/${FOLDER}/${key}`
   }
-  if (item.kind === 'video') return opts.w && opts.w <= 960 ? `/media/${key}-sm.mp4` : `/media/${key}.mp4`
-  if (opts.w && opts.w <= 900) return `/media/${key}-800.webp`
-  if (opts.w && opts.w <= 1500) return `/media/${key}-1400.webp`
-  return `/media/${key}.webp`
+  if (item.kind === 'video') return local(opts.w && opts.w <= 960 ? `${key}-sm.mp4` : `${key}.mp4`)
+  if (opts.w && opts.w <= 900) return local(`${key}-800.webp`)
+  if (opts.w && opts.w <= 1500) return local(`${key}-1400.webp`)
+  return local(`${key}.webp`)
 }
+
+// /media is cached for 30 days, 404s included: bump this whenever files change or go missing
+const MEDIA_V = '2'
+const local = (file: string) => `/media/${file}?v=${MEDIA_V}`
 
 /** Poster image URL for a key (videos use their poster, images themselves). */
 export function poster(key: string, opts: MediaOpts = {}): string {
