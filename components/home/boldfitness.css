@@ -1,0 +1,115 @@
+/* ===== 4. FITNESS / STRONG: squash-stretch words, letters-as-windows zoom, tinted columns, 3D tennis balls ===== */
+.bold.bf { position: relative; background: var(--warm-yellow, #10afc1); }
+/* curtain cut: the stage's scroll-out is skipped (hidden on leave); the next section starts where the pin ends */
+html.motion .bold.bf { z-index: 2; isolation: isolate; margin-bottom: -100svh; }
+.bf .pin-spacer { position: relative; z-index: 0; }
+.bf .bf-stage { position: relative; height: 100svh; overflow: hidden; background: var(--dark, #06141a); }
+.bf .bf-stage > * { position: absolute; inset: 0; }
+.bold.bf:not(.is-near) .bf-stage { visibility: hidden; }
+
+/* video behind the letters; dark base so the letters read dark before the video fades in */
+.bf .bf-video { z-index: 0; background: var(--dark, #06141a); }
+html.motion .bf .bf-video { opacity: 0; visibility: hidden; }
+
+/* yellow sheet with STRONG punched out (SVG mask) */
+.bf .bf-zoom { z-index: 1; transform-origin: var(--bf-ox, 50%) var(--bf-oy, 70%); pointer-events: none; }
+.bf .bf-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bf .bf-fill { fill: var(--warm-yellow, #10afc1); }
+.bf .bf-word {
+  font-family: var(--font-display);
+  font-size: min(23.5vw, 50svh);
+  font-weight: normal;
+  /* visual match to phive's ~80vw word box: Roboto Flex's narrowest cut is far narrower than PPFormula's */
+  font-variation-settings: "wdth" var(--bf-wd, 90), "wght" 600;
+  letter-spacing: -0.02em;
+}
+.bf .bf-strong {
+  --bf-rise: 0;
+  --bf-sy: 2.38;
+  /* origin on the baseline (y="94%"), not the descender-padded text box */
+  transform-box: view-box;
+  transform-origin: 50% 94%;
+  transform: translateY(calc(var(--bf-rise) * 1svh)) scaleY(var(--bf-sy));
+}
+html.motion .bf .bf-strong { --bf-rise: 100; --bf-sy: 1.66; --bf-wd: 60; }
+
+/* FITNESS: narrow hairline, collapses onto its baseline */
+.bf .bf-words { z-index: 2; pointer-events: none; }
+.bold.bf .bf-fitness {
+  position: absolute; left: 0; right: 0; bottom: 40svh;
+  margin: 0;
+  text-align: center; white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: min(23.5vw, 50svh);
+  line-height: 0.74;
+  letter-spacing: -0.02em;
+  font-weight: normal;
+  --wdth: var(--bf-fit-wd, 100);
+  --wght: var(--wght-thin, 100);
+  font-variation-settings: "wdth" var(--bf-fit-wd, 100), "wght" var(--wght-thin, 100);
+  color: var(--dark, #06141a);
+  transform-origin: 50% 100%;
+}
+html.motion .bold.bf .bf-fitness { transform: scaleY(1.3); }
+
+/* brush overlays: 12vw white, rotated */
+.bold.bf .bf-brush { position: absolute; font-size: 12vw; color: var(--white, #fff); line-height: 0.9; white-space: nowrap; z-index: 3; }
+.bold.bf .bf-brush { left: 50%; translate: -50% 0; rotate: -6deg; width: max-content; max-width: 94vw; text-align: center; }
+.bold.bf .bf-brush--get { bottom: 46svh; }
+.bold.bf .bf-brush--go { top: 9svh; }
+
+/* three-column finale */
+.bf .bf-cols { z-index: 3; display: grid; grid-template-columns: 1fr 1.7fr 1fr; pointer-events: none; }
+.bf .bf-col { position: relative; overflow: hidden; isolation: isolate; }
+.bf .bf-col--l, .bf .bf-col--r { background: var(--warm-yellow, #10afc1); }
+.bf .bf-col--l .media-fill, .bf .bf-col--r .media-fill { mix-blend-mode: multiply; opacity: 0.45; }
+html.motion .bf .bf-col--l { transform: translateY(101%); }
+html.motion .bf .bf-col--r { transform: translateY(-101%); }
+
+/* balls in front of type and video; cut to dark above all */
+.bf .bf-balls { z-index: 5; pointer-events: none; }
+.bf .bf-balls canvas { display: block; width: 100% !important; height: 100% !important; }
+.bf .bf-stage > .bf-cut { inset: -2px; z-index: 6; background: var(--dark, #06141a); opacity: 0; visibility: hidden; }
+html.motion .bf .bf-stage > .bf-cut { opacity: 1; visibility: inherit; transform: translateY(104%); border-radius: 50% 50% 0 0 / calc(var(--bf-lip, 16) * 1svh) calc(var(--bf-lip, 16) * 1svh) 0 0; will-change: transform; }
+
+/* static balls (no WebGL / reduced motion) */
+.bf .balls__fallback { position: absolute; inset: 0; }
+.bf .ball-css {
+  position: absolute; width: clamp(54px, 6vw, 130px); aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .45), transparent 40%),
+    radial-gradient(circle at 50% 50%, transparent 52%, rgba(70, 90, 0, .45) 100%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 190, .12) 0 1px, rgba(110, 140, 0, .1) 1px 2px),
+    #d9f24a;
+  box-shadow: 0 18px 30px rgba(var(--dark-rgb, 6, 20, 26), .35);
+}
+.bf .ball-css::after { content: ""; position: absolute; inset: -8% 18%; border: 3px solid #f7f5ea; border-radius: 50%; }
+.bf .ball-css--hero { width: clamp(150px, 21vw, 520px); }
+.bf .ball-css--hero::after { border-width: clamp(4px, .6vw, 10px); }
+.bf .ball-css--a { left: 4vw; top: 12svh; rotate: -12deg; }
+.bf .ball-css--b { right: 6vw; top: 8svh; rotate: 18deg; width: clamp(120px, 17vw, 420px); }
+.bf .ball-css--c { left: 40vw; top: 70svh; }
+.bf .ball-css--d { right: 30vw; top: 62svh; }
+
+/* no motion: static composition */
+html:not(.motion) .bf .bf-strong { --bf-sy: 1.66; }
+html:not(.motion) .bold.bf .bf-fitness { bottom: auto; top: 4svh; transform: scaleY(0.6); transform-origin: 50% 0; }
+html:not(.motion) .bf .bf-cols { display: none; }
+html:not(.motion) .bold.bf .bf-brush--go { display: none; }
+
+@media (max-width: 743px) {
+  .bf .bf-word { font-size: min(31vw, 50svh); }
+  .bold.bf .bf-fitness {
+    font-size: 26vw;
+    --bf-fit-wd: 60;
+    --wght: 250;
+    font-variation-settings: "wdth" var(--bf-fit-wd), "wght" 250;
+  }
+  html.motion .bf .bf-strong { --bf-sy: 3; }
+  .bold.bf .bf-brush { font-size: 18vw; }
+  .bold.bf .bf-brush--get { bottom: calc(40svh + 20vw); }
+  .bold.bf .bf-brush--go { top: 11svh; }
+  .bf .bf-cols { grid-template-columns: 1fr 1.4fr 1fr; }
+  .bf .ball-css--hero { width: 38vw; }
+  .bf .ball-css--b, .bf .ball-css--d { display: none; }
+}

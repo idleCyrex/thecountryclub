@@ -1,0 +1,27 @@
+.spa-band { background: radial-gradient(82% 72% at 74% 82%, color-mix(in srgb, var(--bronze) 40%, var(--dark)) 10%, var(--dark) 96%); padding: clamp(4rem, 9vw, 9rem) var(--pad); }
+.spa-band .spa-band__grid { max-width: 1500px; margin-inline: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 6rem); align-items: center; padding: 0; }
+.spa-band .spa-band__text { align-items: center; text-align: center; gap: clamp(1rem, 1.8vw, 2rem); }
+.spa-band .spa-band__title { align-items: center; margin: 0; }
+.spa-band .spa-band__h { margin: 0; font-size: min(11.5vw, 12.5rem); --wdth: var(--wdth-cond, 50); --wght: var(--wght-regular, 450); letter-spacing: -0.02em; line-height: .95; color: var(--yellow); text-align: center; }
+.spa-band .spa-band__h span { display: block; overflow: hidden; padding: .14em .08em .12em; margin: -.14em -.08em -.12em; }
+.spa-band .spa-band__h i { display: block; font-style: normal; }
+.spa-band .spa-band__text .body-caps { text-align: center; font-size: max(13px, 1.1vw); max-width: 38ch; margin-inline: auto; color: var(--light-yellow); font-weight: 300; }
+.spa-band .spa-band__hours { font-size: max(13px, .85vw); text-align: center; }
+.spa-band .spa-band__actions { justify-content: center; gap: .8vw; }
+.spa-band .spa-band__media { min-height: 0; align-items: center; justify-content: center; }
+.spa-band .spa-band__pw { position: relative; width: min(34vw, 520px, 64svh); }
+.spa-band .spa-band__panel { width: 100%; aspect-ratio: 0.8; border-radius: 0; border: 0; position: relative; }
+.spa-band .spa-band__frame { position: absolute; inset: -14px; width: calc(100% + 28px); height: calc(100% + 28px); overflow: visible; pointer-events: none; }
+.spa-band .spa-band__frame rect { fill: none; stroke: var(--bronze); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 0; }
+html.motion .spa-band .spa-band__frame rect { stroke-dashoffset: 1; visibility: hidden; }
+.spa-band .spa-band__chip { right: -2vw; bottom: 3vw; width: clamp(80px, 9vw, 150px); z-index: 2; }
+@media (max-width: 743px) {
+  .spa-band { padding: 22vw var(--pad) 16vw; }
+  .spa-band .spa-band__grid { grid-template-columns: 1fr; gap: 14vw; }
+  .spa-band .spa-band__h { font-size: 26vw; }
+  .spa-band .spa-band__text { gap: 6vw; }
+  .spa-band .spa-band__text .body-caps { font-size: 14px; }
+  .spa-band .spa-band__actions { gap: 10px; }
+  .spa-band .spa-band__pw { width: min(78vw, 60svh); }
+  .spa-band .spa-band__chip { width: 26vw; right: -4vw; bottom: 4vw; }
+}

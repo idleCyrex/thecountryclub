@@ -1,0 +1,6 @@
+.intro .intro__brush { left: 50%; top: 62%; font-size: clamp(1.4rem, 2.6vw, 4.5rem); transform: rotate(-6deg); padding: .1em .2em; }
+html.motion .intro .intro__brush .split-block { visibility: hidden; }
+
+@media (max-width: 743px) {
+  .intro .intro__brush { font-size: 5.5vw; }
+}

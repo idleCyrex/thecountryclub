@@ -1,0 +1,75 @@
+.preloader { display: none; }
+html.is-loading .preloader {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: stretch; justify-content: center;
+  background: var(--dark); color: var(--yellow);
+  will-change: transform;
+  /* failsafe if the script never runs */
+  animation: pl-bail .4s 50s forwards;
+}
+@keyframes pl-bail { to { opacity: 0; visibility: hidden; } }
+
+.pl-inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
+  padding: max(1.4rem, env(safe-area-inset-top)) var(--pad) max(1.6rem, env(safe-area-inset-bottom));
+}
+.pl-brand {
+  margin: 0; font-family: var(--font-slab); font-weight: 800; font-size: clamp(15px, 1.25vw, 24px); line-height: 1;
+  letter-spacing: -.01em; text-transform: uppercase; white-space: nowrap;
+}
+
+/* odometer: each column is a clipped strip of digits that rolls */
+.preloader .pl-count {
+  --pl-wdth: 45;
+  display: flex; align-items: flex-start; justify-content: center;
+  font-size: min(40vw, 54svh); line-height: .82;
+  font-variation-settings: "wdth" var(--pl-wdth), "wght" 560;
+  font-variant-numeric: tabular-nums;
+}
+.pl-col { display: block; height: .82em; overflow: hidden; }
+.pl-col--hund { width: 0; }
+.pl-strip { display: flex; flex-direction: column; will-change: transform; }
+.pl-strip > span { display: block; height: .82em; line-height: .82; }
+.pl-count i {
+  font: normal 600 clamp(14px, 1.4vw, 26px)/1 var(--font-body); letter-spacing: .04em;
+  margin: .5em 0 0 .35em; opacity: .7;
+}
+
+.pl-foot { width: min(100%, 46rem); display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
+.pl-track { position: relative; width: 100%; height: 26px; }
+.pl-line, .pl-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; }
+.pl-line { background: color-mix(in srgb, var(--yellow) 25%, transparent); }
+.pl-fill { height: 2px; background: var(--yellow); transform: scaleX(0); transform-origin: 0 50%; }
+/* the rail is the track minus one ball, so translateX(v%) lands the ball's right edge on the line's end at 100 */
+.pl-rail { position: absolute; left: 0; right: 26px; bottom: 2px; height: 26px; }
+.pl-ball { width: 100%; height: 100%; will-change: transform; }
+.pl-bounce { width: 26px; height: 26px; animation: pl-bounce .62s cubic-bezier(.25, .6, .4, 1) infinite alternate; transform-origin: 50% 100%; }
+.pl-spin { width: 100%; height: 100%; will-change: transform; }
+.pl-spin svg { display: block; }
+@keyframes pl-bounce {
+  0% { transform: translateY(0) scale(1.12, .86); }
+  18% { transform: translateY(-4px) scale(1, 1); }
+  100% { transform: translateY(-34px) scale(.96, 1.04); }
+}
+.pl-saywin { display: block; height: 1.4em; overflow: hidden; font: 600 12px/1.4 var(--font-body); letter-spacing: .14em; text-transform: uppercase; opacity: .7; }
+.pl-say { display: flex; flex-direction: column; will-change: transform; }
+.pl-say > span { display: block; height: 1.4em; white-space: nowrap; }
+
+/* pre-hydration: the curve runs as compositor animations (keyframes generated in Preloader.tsx) */
+html.is-loading .pl-ones { animation: pl-ones 11s linear forwards; }
+html.is-loading .pl-tens { animation: pl-tens 11s linear forwards; }
+html.is-loading .pl-fill { animation: pl-fill 11s linear forwards; }
+html.is-loading .pl-ball { animation: pl-roll 11s linear forwards; }
+html.is-loading .pl-spin { animation: pl-turn 11s linear forwards; }
+html.is-loading .pl-say { animation: pl-say 11s linear forwards; }
+html.is-loading .preloader.is-js :is(.pl-ones, .pl-tens, .pl-fill, .pl-ball, .pl-spin, .pl-say) { animation: none; }
+
+@media (max-width: 743px) {
+  .preloader .pl-count { font-size: min(46vw, 40svh); }
+  .pl-foot { gap: .9rem; }
+  .pl-saywin { font-size: 11px; letter-spacing: .1em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-bounce { animation: none; }
+}

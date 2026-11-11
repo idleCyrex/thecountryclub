@@ -1,0 +1,33 @@
+.classes { position: relative; z-index: 1; background: var(--dark); }
+.classes .classes__pin { height: 100svh; background: var(--dark); }
+.classes .classes__title { z-index: 2; }
+.classes .classes__cards { z-index: 3; }
+.classes .ccard, .classes .ccard--over { z-index: 3; }
+.classes .ccard__link { background: var(--dark); }
+.classes .ccard__link::after { background: linear-gradient(to top, rgba(var(--dark-rgb), .9), rgba(var(--dark-rgb), .05) 58%); }
+.classes .classes__title { gap: 1.1vw; }
+.classes .classes__word { font-size: 17vw; --wdth: 60; --wght: var(--wght-regular, 450); letter-spacing: -0.02em; line-height: 1; color: var(--yellow); }
+.classes .classes__copy { font-size: max(13px, 1.1vw); font-weight: 300; max-width: 30ch; line-height: 1.3; }
+.classes .classes__title .btn { padding: .9em 1.8em; font-size: max(12px, .8vw); }
+.classes .ccard { width: 23vw; aspect-ratio: 0.82; }
+.classes .ccard__link { border-radius: 0; }
+.classes .ccard__body { inset: auto 0 0 0; align-items: center; justify-content: center; text-align: center; gap: .7vw; padding: 1.6vw 1vw 1.8vw; }
+.classes .ccard__icon { width: max(26px, 2vw); height: max(26px, 2vw); }
+.classes .ccard__name { font-size: max(1.3rem, 1.5vw); --wdth: var(--wdth-cond, 50); --wght: var(--wght-regular, 450); color: var(--white); text-align: center; }
+.classes .ccard .pill { color: var(--white); border-color: var(--white); font-size: max(12px, .75vw); letter-spacing: .06em; }
+.classes .classes__prog { display: none; flex-direction: column; align-items: center; gap: 3.5vw; margin-top: 7vw; }
+.classes .classes__count { font-size: 12px; font-variant-caps: all-small-caps; letter-spacing: .14em; font-weight: 300; color: rgba(255, 255, 255, .7); }
+.classes .classes__track { position: relative; width: 36vw; height: 2px; background: rgba(255, 255, 255, .18); overflow: hidden; }
+.classes .classes__fill { position: absolute; inset: 0; background: var(--yellow); transform: scaleX(0); transform-origin: left center; }
+@media (max-width: 743px) {
+  .classes .classes__pin { height: auto; overflow: visible; padding: 16vw 0 12vw; }
+  .classes .classes__title { position: relative; inset: auto; gap: 4vw; padding: 0 var(--pad); }
+  .classes .classes__word { font-size: 30vw; }
+  .classes .classes__copy { font-size: 14px; }
+  .classes .classes__cards { position: relative; inset: auto; display: flex; flex-direction: row; align-items: stretch; gap: 4vw; margin-top: 9vw; padding: 0 13vw; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 13vw; scrollbar-width: none; pointer-events: auto; }
+  .classes .classes__cards::-webkit-scrollbar { display: none; }
+  .classes .ccard { position: relative; top: auto; left: auto; flex: 0 0 74vw; width: 74vw; aspect-ratio: 0.8; scroll-snap-align: center; transform: none !important; margin-top: 0 !important; }
+  .classes .classes__prog { display: flex; }
+  .classes .ccard__name { font-size: 1.6rem; }
+  .classes .ccard .pill { font-size: 12px; }
+}
