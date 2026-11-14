@@ -26,13 +26,6 @@ const POS: Record<string, string> = {
   'gym-rack': '50% 20%', carnival: '50% 25%', 'aerial-club': '50% 50%', 'tennis-court': '50% 60%', 'tennis-shade': '50% 45%',
   pool: '50% 50%', 'pool-yoga': '50% 40%', 'spa-clinic': '64% 50%', 'spa-stones': '50% 50%', 'spa-salon': '50% 40%',
 }
-const TOP_KEY: Record<string, string> = {
-  'THE CLUB': 'aerial-club', 'THE GYM': 'gym-rack', 'THE COURTS': 'tennis-court', 'THE POOL': 'pool', 'THE SPA': 'spa-stones',
-}
-const WORDS = ['THE CLUB', 'THE GYM', 'THE COURTS', 'THE POOL', 'THE SPA']
-const WORD_HREF: Record<string, string> = {
-  'THE CLUB': '/club-fitness', 'THE GYM': '/club-fitness', 'THE COURTS': '/tennis', 'THE POOL': '/pool', 'THE SPA': '/spa',
-}
 const CARD_KEY: Record<string, string> = {
   'gym-floor': 'gym-floor', 'tennis-courts': 'tennis-night', 'members-pool': 'pool', 'impulse-spa': 'spa-stones', 'locker-rooms': 'spa-clinic',
 }
@@ -129,7 +122,9 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         let lastX = 0
         let lastT = 0
         let vel = 0
-        const perPx = () => 150 / window.innerWidth
+        // card width is 12 units; 1 / unit turns the ring at finger speed, a touch more feels lighter
+        const perPx = () => (1.3 * 12) / (photos[0].offsetWidth || 240)
+        const snap = (r: number) => Math.round(r / SECTOR) * SECTOR
         const turnTo = (rot: number, duration: number, ease: string) => {
           tw?.kill()
           tw = gsap.to(state, { rot, duration, ease, onUpdate: apply })
@@ -151,7 +146,9 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
             tw?.kill()
             x0 = lastX = e.clientX
             r0 = state.rot
-            stage.setPointerCapture(e.pointerId)
+            try {
+              stage.setPointerCapture(e.pointerId)
+            } catch {}
             stage.classList.add('is-dragging')
           }
           const k = perPx()
@@ -170,7 +167,10 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
           stage.classList.remove('is-dragging')
           if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId)
           const throwBy = e.timeStamp - lastT > 120 ? 0 : gsap.utils.clamp(-SECTOR, SECTOR, vel * 320)
-          turnTo(Math.round((state.rot + throwBy) / SECTOR) * SECTOR, 0.9, 'power3.out')
+          const by = state.rot - r0 + throwBy
+          let to = snap(r0 + by)
+          if (to === snap(r0) && Math.abs(by) > 9) to += Math.sign(by) * SECTOR
+          turnTo(to, 0.9, 'power3.out')
           hold = performance.now() + 4000
         }
         // a drag that ends over a card must not follow its link
@@ -192,7 +192,7 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         io.observe(stage)
         const auto = window.setInterval(() => {
           if (!live || !inView || down || document.hidden || performance.now() < hold) return
-          turnTo(Math.round(state.rot / SECTOR) * SECTOR - SECTOR, 1.4, 'power2.inOut')
+          turnTo(snap(state.rot) - SECTOR, 1.4, 'power2.inOut')
         }, 3400)
 
         return () => {
@@ -229,44 +229,16 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         )
       }
 
-      const mm = gsap.matchMedia()
-      mm.add('(min-width: 744px)', () => orbit())
+      const stop = orbit()
       cards()
       refreshSoon()
-      return () => mm.revert()
+      return stop
     },
     { scope: root, dependencies: [near] },
   )
 
   return (
     <section className="pile" data-theme="dark" ref={root}>
-      <div className="pile-m">
-        <Brush text="Choose your game" className="pile-m__brush" />
-        <ul className="pile-m__track">
-          {WORDS.map((w) => (
-            <li key={w} className="pile-m__item">
-              <TransitionLink href={WORD_HREF[w]} className="pile-m__card">
-                <MediaFill
-                  k={TOP_KEY[w]}
-                  w={900}
-                  sizes="80vw"
-                  className="pile-m__img"
-                  style={{ objectPosition: POS[TOP_KEY[w]] ?? '50% 40%' }}
-                />
-                <span className="pile-m__word">{w}</span>
-              </TransitionLink>
-            </li>
-          ))}
-        </ul>
-        <div className="pile-m__actions">
-          <TransitionLink className="btn" href="/contact">
-            Book a visit
-          </TransitionLink>
-          <TransitionLink className="btn btn--outline" href="/contact">
-            Membership
-          </TransitionLink>
-        </div>
-      </div>
       <div className="pile__pin">
         <div className="orbit">
           <div className="orbit__scene">
@@ -283,7 +255,7 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
                     <MediaFill
                       k={c.k}
                       w={800}
-                      sizes="(max-width: 743px) 1px, 24vw"
+                      sizes="(max-width: 743px) 48vw, 24vw"
                       alt=""
                       style={{ objectPosition: POS[c.k] ?? '50% 35%' }}
                     />
