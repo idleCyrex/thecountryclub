@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import { useNear, refreshSoon } from '@/lib/lazy'
-import { gsap, ScrollTrigger, useGSAP, prefersReduced } from '@/lib/gsap'
-import { brushWrite, initRolling, roll } from '@/lib/motion'
+import { gsap, useGSAP, prefersReduced } from '@/lib/gsap'
+import { brushWrite, initRolling, killRolling, roll } from '@/lib/motion'
 import type { Facility } from '@/content/site'
 import Rolling from '../ui/Rolling'
 import Brush from '../ui/Brush'
@@ -11,31 +11,25 @@ import MediaFill from '../ui/MediaFill'
 import TransitionLink from '../ui/TransitionLink'
 import './gridstack.css'
 
-const KEYS = [
-  'gym-highfive', 'pool-party', 'tennis-court', 'spa-stones', 'gym-deadlift', 'pool-yoga',
-  'kids', 'gym-flex', 'tennis-night', 'aerial-side', 'spa-clinic',
-  'gym-cardio', 'pool-lounge', 'gym-rack', 'carnival', 'gym-legpress', 'tennis-shade',
-  'spa-salon', 'gym-coach', 'pool-walk', 'gym-bike', 'gym-stretch',
-  'spa-nails', 'gym-seated', 'pool', 'gym-cable', 'gym-kickback', 'gym-duo',
-  'gym-floor', 'gym-stair', 'aerial-club',
+const AREAS = [
+  { word: 'THE CLUB', href: '/club-fitness', keys: ['kids', 'aerial-club', 'carnival'] },
+  { word: 'THE GYM', href: '/club-fitness', keys: ['gym-highfive', 'gym-rack', 'gym-flex'] },
+  { word: 'THE COURTS', href: '/tennis', keys: ['tennis-night', 'tennis-court', 'tennis-shade'] },
+  { word: 'THE POOL', href: '/pool', keys: ['pool-party', 'pool', 'pool-yoga'] },
+  { word: 'THE SPA', href: '/spa', keys: ['spa-clinic', 'spa-stones', 'spa-salon'] },
 ]
+const CARDS = AREAS.flatMap((a) => a.keys.map((k) => ({ k, href: a.href })))
+const STEP = 24
+const SECTOR = 72
 const POS: Record<string, string> = {
-  'gym-highfive': '50% 25%', 'pool-party': '50% 40%', 'gym-deadlift': '50% 35%', kids: '50% 30%', 'gym-flex': '50% 20%',
-  'tennis-night': '50% 55%', 'aerial-side': '40% 50%', 'gym-rack': '50% 20%', carnival: '50% 25%', 'gym-coach': '50% 30%',
-  'pool-walk': '50% 35%', 'gym-seated': '50% 25%', 'gym-duo': '50% 25%', 'aerial-club': '50% 50%', 'tennis-court': '50% 60%',
-}
-const FILL: Record<number, string> = { 6: 'crew-1', 12: 'crew-2', 19: 'crew-3', 27: 'crew-4', 33: 'crew-5' }
-const CELLS: string[] = []
-{
-  let n = 0
-  for (let c = 0; c < 36; c++) CELLS.push(FILL[c] ?? KEYS[n++])
+  'gym-highfive': '50% 25%', 'pool-party': '50% 40%', kids: '50% 30%', 'gym-flex': '50% 20%', 'tennis-night': '50% 55%',
+  'gym-rack': '50% 20%', carnival: '50% 25%', 'aerial-club': '50% 50%', 'tennis-court': '50% 60%', 'tennis-shade': '50% 45%',
+  pool: '50% 50%', 'pool-yoga': '50% 40%', 'spa-clinic': '64% 50%', 'spa-stones': '50% 50%', 'spa-salon': '50% 40%',
 }
 const TOP_KEY: Record<string, string> = {
   'THE CLUB': 'aerial-club', 'THE GYM': 'gym-rack', 'THE COURTS': 'tennis-court', 'THE POOL': 'pool', 'THE SPA': 'spa-stones',
 }
 const WORDS = ['THE CLUB', 'THE GYM', 'THE COURTS', 'THE POOL', 'THE SPA']
-const REVEAL = 0.7
-const LIVE = 1.1
 const WORD_HREF: Record<string, string> = {
   'THE CLUB': '/club-fitness', 'THE GYM': '/club-fitness', 'THE COURTS': '/tennis', 'THE POOL': '/pool', 'THE SPA': '/spa',
 }
@@ -52,96 +46,168 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
     () => {
       const el = root.current
       if (!el || !near) return
-      const stage = el.querySelector<HTMLElement>('.pile__stage')!
-      const grid = el.querySelector<HTMLElement>('.gs__grid')!
-      const word = el.querySelector<HTMLElement>('.pile__word')!
-      const tiles = gsap.utils.toArray<HTMLElement>('.pile__photo', el)
-      const scrim = el.querySelector<HTMLElement>('.pile__scrim')!
-      const byKey = new Map(tiles.map((t) => [t.dataset.k!, t]))
-      const baseZ = new Map(tiles.map((t) => [t, Number(t.style.zIndex)]))
-      let topTile = byKey.get('aerial-club')!
-      const movers = tiles
-      const rot = tiles.map(() => gsap.utils.random(-4, 4))
-      const off = tiles.map(() => [gsap.utils.random(-30, 30), gsap.utils.random(-30, 30)])
-      const pileScale = () =>
-        stage.offsetWidth < 744 ? gsap.utils.clamp(1.8, 3.4, (stage.offsetWidth * 0.64) / tiles[0].offsetWidth) : 1.8
-      const origin = () => {
-        const g = grid.getBoundingClientRect()
-        const s = stage.getBoundingClientRect()
-        return [g.left - s.left, g.top - s.top]
-      }
-      const toPile = (t: HTMLElement) => {
-        const i = tiles.indexOf(t)
-        return {
-          x: () => stage.offsetWidth / 2 - (origin()[0] + t.offsetLeft + t.offsetWidth / 2) + off[i][0],
-          y: () => stage.offsetHeight * 0.46 - (origin()[1] + t.offsetTop + t.offsetHeight / 2) + off[i][1],
-          rotation: rot[i],
-          scale: pileScale,
-        }
-      }
 
-      const pile = () => {
-        if (prefersReduced()) {
-          movers.forEach((t) => {
-            const p = toPile(t)
-            gsap.set(t, { x: p.x(), y: p.y(), rotation: p.rotation, scale: p.scale() })
+      const orbit = () => {
+        const ring = el.querySelector<HTMLElement>('.orbit__ring')!
+        const word = el.querySelector<HTMLElement>('.orbit__word')!
+        const photos = gsap.utils.toArray<HTMLElement>('.orbit__card', el)
+        const state = { rot: 0, spin: 0, k: 1 }
+        const dims: string[] = []
+        const far: boolean[] = []
+        let want = 0
+        let shown = 0
+        let rolling = false
+        let live = false
+        let alive = true
+
+        const sync = () => {
+          if (!alive || rolling || shown === want || !live) return
+          rolling = true
+          shown = want
+          roll(word, { word: AREAS[want].word, duration: 0.6, stagger: 0.03 }).then(() => {
+            rolling = false
+            sync()
           })
+        }
+        const apply = () => {
+          const turn = state.rot + state.spin
+          ring.style.setProperty('--rot', `${turn}deg`)
+          ring.style.setProperty('--k', String(state.k))
+          photos.forEach((p, i) => {
+            const c = Math.cos((((i - 1) * STEP + turn) * Math.PI) / 180)
+            const d = ((c + 1) / 2).toFixed(3)
+            if (dims[i] !== d) {
+              dims[i] = d
+              p.style.setProperty('--d', d)
+            }
+            const f = c < 0
+            if (far[i] !== f) {
+              far[i] = f
+              p.classList.toggle('is-far', f)
+            }
+          })
+          want = ((Math.round(-state.rot / SECTOR) % 5) + 5) % 5
+          sync()
+        }
+
+        if (prefersReduced()) {
+          apply()
           return
         }
 
         initRolling(word)
-        gsap.set(scrim, { autoAlpha: 0 })
+        state.k = 0.3
+        state.spin = 80
+        gsap.set(photos, { autoAlpha: 0 })
+        apply()
 
-        const tl = gsap.timeline({
-          defaults: { ease: 'power2.inOut' },
-          scrollTrigger: {
-            trigger: '.pile__pin',
-            start: 'top top',
-            end: () => `+=${window.innerHeight * (window.innerWidth < 744 ? 1.6 : 3)}`,
-            pin: true,
-            anticipatePin: 1,
-            scrub: 0.8,
-            invalidateOnRefresh: true,
-          },
-        })
-        movers.forEach((t, i) => {
-          tl.to(t, { ...toPile(t), duration: 0.6 }, i * 0.012)
-        })
-        tl.to(scrim, { autoAlpha: 1, duration: 0.4, ease: 'none' }, 0.6)
-          .fromTo(word, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.08, ease: 'none' }, REVEAL)
-          .fromTo(word, { scaleY: 0 }, { scaleY: 1, duration: LIVE - REVEAL, ease: 'expo.out' }, REVEAL)
-          .add(brushWrite(el.querySelector('.pile__brush'), { duration: 0.4, stagger: 0.15 }), 1.4)
-          .fromTo('.pile__actions', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'expo.out' }, 1.6)
-          .to({}, { duration: 0.3 })
+        gsap
+          .timeline({ onUpdate: apply, scrollTrigger: { trigger: '.pile__pin', start: 'top 65%', once: true } })
+          .to(state, { k: 1, spin: 0, duration: 1.6, ease: 'expo.out' }, 0)
+          .fromTo(photos, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6, stagger: 0.03, ease: 'none' }, 0)
+          .fromTo(word, { autoAlpha: 0, scaleY: 0 }, { autoAlpha: 1, scaleY: 1, duration: 0.8, ease: 'expo.out' }, 0.5)
+          .call(
+            () => {
+              live = true
+              sync()
+            },
+            [],
+            1.3,
+          )
+          .add(brushWrite(el.querySelector('.orbit__brush'), { duration: 0.4, stagger: 0.15 }), 1)
+          .fromTo('.orbit__actions', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'expo.out' }, 1.2)
 
-        const surface = (w: string) => {
-          const t = byKey.get(TOP_KEY[w])
-          if (!t || t === topTile) return
-          topTile.style.zIndex = String(baseZ.get(topTile))
-          topTile = t
-          t.style.zIndex = '100'
-          t.animate([{ scale: '1.14' }, { scale: '1' }], { duration: 520, easing: 'cubic-bezier(.16,1,.3,1)' })
+        const stage = el.querySelector<HTMLElement>('.orbit')!
+        let tw: gsap.core.Tween | undefined
+        let hold = 0
+        let inView = false
+        let down = false
+        let dragging = false
+        let moved = false
+        let x0 = 0
+        let r0 = 0
+        let lastX = 0
+        let lastT = 0
+        let vel = 0
+        const perPx = () => 150 / window.innerWidth
+        const turnTo = (rot: number, duration: number, ease: string) => {
+          tw?.kill()
+          tw = gsap.to(state, { rot, duration, ease, onUpdate: apply })
         }
-        let i = 0
-        let timer = 0
-        const st = ScrollTrigger.create({
-          trigger: '.pile__pin',
-          start: 'top 60%',
-          end: () => `+=${window.innerHeight * (window.innerWidth < 744 ? 2.2 : 3.6)}`,
-          onToggle(self) {
-            window.clearInterval(timer)
-            if (self.isActive)
-              timer = window.setInterval(() => {
-                if (document.hidden || tl.time() < LIVE) return
-                const w = WORDS[++i % WORDS.length]
-                roll(word, { word: w })
-                surface(w)
-              }, 2400)
-          },
-        })
+        const onDown = (e: PointerEvent) => {
+          if (!live || (e.pointerType === 'mouse' && e.button !== 0) || (e.target as Element).closest('.orbit__actions')) return
+          down = true
+          dragging = moved = false
+          x0 = lastX = e.clientX
+          lastT = e.timeStamp
+          vel = 0
+        }
+        const onMove = (e: PointerEvent) => {
+          hold = performance.now() + 2600
+          if (!down) return
+          if (!dragging) {
+            if (Math.abs(e.clientX - x0) < 6) return
+            dragging = moved = true
+            tw?.kill()
+            x0 = lastX = e.clientX
+            r0 = state.rot
+            stage.setPointerCapture(e.pointerId)
+            stage.classList.add('is-dragging')
+          }
+          const k = perPx()
+          const dt = e.timeStamp - lastT
+          if (dt > 0) vel = 0.7 * (((e.clientX - lastX) * k) / dt) + 0.3 * vel
+          lastX = e.clientX
+          lastT = e.timeStamp
+          state.rot = r0 + (e.clientX - x0) * k
+          apply()
+        }
+        const onUp = (e: PointerEvent) => {
+          if (!down) return
+          down = false
+          if (!dragging) return
+          dragging = false
+          stage.classList.remove('is-dragging')
+          if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId)
+          const throwBy = e.timeStamp - lastT > 120 ? 0 : gsap.utils.clamp(-SECTOR, SECTOR, vel * 320)
+          turnTo(Math.round((state.rot + throwBy) / SECTOR) * SECTOR, 0.9, 'power3.out')
+          hold = performance.now() + 4000
+        }
+        // a drag that ends over a card must not follow its link
+        const onClick = (e: MouseEvent) => {
+          if (!moved) return
+          moved = false
+          e.preventDefault()
+          e.stopPropagation()
+        }
+        const noDrag = (e: Event) => e.preventDefault()
+        stage.addEventListener('pointerdown', onDown)
+        stage.addEventListener('pointermove', onMove)
+        stage.addEventListener('pointerup', onUp)
+        stage.addEventListener('pointercancel', onUp)
+        stage.addEventListener('click', onClick, true)
+        stage.addEventListener('dragstart', noDrag)
+
+        const io = new IntersectionObserver(([e]) => (inView = e.isIntersecting), { threshold: 0.35 })
+        io.observe(stage)
+        const auto = window.setInterval(() => {
+          if (!live || !inView || down || document.hidden || performance.now() < hold) return
+          turnTo(Math.round(state.rot / SECTOR) * SECTOR - SECTOR, 1.4, 'power2.inOut')
+        }, 3400)
+
         return () => {
-          window.clearInterval(timer)
-          st.kill()
+          alive = false
+          window.clearInterval(auto)
+          io.disconnect()
+          tw?.kill()
+          stage.removeEventListener('pointerdown', onDown)
+          stage.removeEventListener('pointermove', onMove)
+          stage.removeEventListener('pointerup', onUp)
+          stage.removeEventListener('pointercancel', onUp)
+          stage.removeEventListener('click', onClick, true)
+          stage.removeEventListener('dragstart', noDrag)
+          stage.classList.remove('is-dragging')
+          killRolling(word)
         }
       }
 
@@ -164,7 +230,7 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
       }
 
       const mm = gsap.matchMedia()
-      mm.add('(min-width: 744px)', () => pile())
+      mm.add('(min-width: 744px)', () => orbit())
       cards()
       refreshSoon()
       return () => mm.revert()
@@ -202,26 +268,41 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         </div>
       </div>
       <div className="pile__pin">
-        <div className="pile__stage">
-          <div className="gs__grid">
-            {CELLS.map((k, i) => (
-              <figure key={i} className="pile__photo" data-k={k} style={{ zIndex: i + 1 }}>
-                <MediaFill k={k} w={800} sizes="(max-width: 743px) 25vw, 20vw" style={{ objectPosition: POS[k] ?? '50% 35%' }} />
-              </figure>
-            ))}
-          </div>
-          <div className="pile__scrim" aria-hidden="true" />
-          <div className="pile__center">
-            <Rolling text={WORDS[0]} className="pile__word" mode="none" />
-            <Brush text="Choose your game" mode="none" className="pile__brush" />
-            <div className="pile__actions">
-              <TransitionLink className="btn" href="/contact">
-                Book a visit
-              </TransitionLink>
-              <TransitionLink className="btn btn--outline" href="/contact">
-                Membership
-              </TransitionLink>
+        <div className="orbit">
+          <div className="orbit__scene">
+            <div className="orbit__tilt">
+              <div className="orbit__ring" aria-hidden="true">
+                {CARDS.map((c, i) => (
+                  <TransitionLink
+                    key={c.k}
+                    href={c.href}
+                    className="orbit__card"
+                    tabIndex={-1}
+                    style={{ '--a': `${(i - 1) * STEP}deg` } as CSSProperties}
+                  >
+                    <MediaFill
+                      k={c.k}
+                      w={800}
+                      sizes="(max-width: 743px) 1px, 24vw"
+                      alt=""
+                      style={{ objectPosition: POS[c.k] ?? '50% 35%' }}
+                    />
+                  </TransitionLink>
+                ))}
+              </div>
             </div>
+            <div className="orbit__wordwrap">
+              <Rolling text={AREAS[0].word} className="orbit__word" mode="none" />
+            </div>
+          </div>
+          <Brush text="Choose your game" mode="none" className="orbit__brush" />
+          <div className="orbit__actions">
+            <TransitionLink className="btn" href="/contact">
+              Book a visit
+            </TransitionLink>
+            <TransitionLink className="btn btn--outline" href="/contact">
+              Membership
+            </TransitionLink>
           </div>
         </div>
       </div>

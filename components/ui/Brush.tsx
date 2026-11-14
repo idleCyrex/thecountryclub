@@ -52,7 +52,7 @@ export default function Brush({ text, className = '', style, dark, mode = 'view'
     { dependencies: [text, mode, go] },
   )
 
-  const s = rotate === undefined ? style : { ...style, transform: `rotate(${rotate}deg)` }
+  const s = { ...style, '--bn': text.length, ...(rotate === undefined ? null : { transform: `rotate(${rotate}deg)` }) } as CSSProperties
 
   return (
     <span ref={ref} className={`brush ${dark ? 'brush--dark' : ''} ${className}`} style={s} aria-hidden="true">

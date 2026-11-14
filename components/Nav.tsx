@@ -12,14 +12,12 @@ import './nav.css'
 const JOIN = MENU[0]
 let warmed = false
 
-/** Weight-plate trigger (bottom-right) that opens a full-screen gold overlay with a circular wipe. */
+/** Labelled capsule trigger (top-right) that opens a full-screen gold overlay with a circular wipe. */
 export default function Nav() {
   const pathname = usePathname()
   const root = useRef<HTMLDivElement>(null)
   const plate = useRef<HTMLButtonElement>(null)
   const overlay = useRef<HTMLDivElement>(null)
-  const scrollRing = useRef<SVGGElement>(null)
-  const spinRing = useRef<SVGGElement>(null)
   const tl = useRef<gsap.core.Timeline | null>(null)
   const prevOpen = useRef(false)
   const [open, setOpen] = useState(false)
@@ -84,26 +82,6 @@ export default function Nav() {
       else clearTimeout(id)
     }
   }, [router])
-
-  useEffect(() => {
-    const g = scrollRing.current
-    if (!g || prefersReduced()) return
-    gsap.set(g, { svgOrigin: '50 50' })
-    const set = gsap.quickSetter(g, 'rotation', 'deg') as (v: number) => void
-    const onScroll = () => set(window.scrollY * 0.12)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  useEffect(() => {
-    if (spinRing.current) gsap.set(spinRing.current, { svgOrigin: '50 50' })
-  }, [])
-
-  const spin = () => {
-    if (prefersReduced() || !spinRing.current) return
-    gsap.to(spinRing.current, { rotation: '+=360', duration: 2.2, ease: 'power3.out', overwrite: 'auto' })
-  }
 
   useEffect(() => {
     const ov = overlay.current
@@ -188,8 +166,6 @@ export default function Nav() {
     }
   }
 
-  const ringText = open ? 'CLOSE · MENU · ' : 'MENU · COUNTRY CLUB · '
-
   return (
     <div className="plate-nav" ref={root} data-open={open} data-on="photo">
       <div
@@ -262,31 +238,25 @@ export default function Nav() {
       <button
         type="button"
         ref={plate}
-        className="pm-plate"
+        className="pm-btn"
         aria-expanded={open}
         aria-controls="site-menu"
-        aria-label={open ? 'Close menu' : 'Menu, Country Club'}
+        aria-label={open ? 'Close menu' : 'Open menu'}
         onClick={() => setOpen((o) => !o)}
-        onMouseEnter={spin}
       >
-        <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-          <defs>
-            <path id="pm-circle" d="M50 9 a41 41 0 1 1 0 82 a41 41 0 1 1 0 -82" />
-          </defs>
-          <circle className="pm-disc" cx="50" cy="50" r="49" />
-          <g ref={scrollRing}>
-            <g ref={spinRing}>
-              <text className="pm-ring-text">
-                <textPath href="#pm-circle" textLength="257" lengthAdjust="spacing">
-                  {ringText}
-                </textPath>
-              </text>
-            </g>
-          </g>
-          <circle className="pm-inner" cx="50" cy="50" r="30" />
-          <circle className="pm-hub" cx="50" cy="50" r="4" />
-          <path className="pm-x" d="M43 43 L57 57 M57 43 L43 57" />
-        </svg>
+        <span className="pm-btn__label" aria-hidden="true">
+          <span className="pm-btn__word">Menu</span>
+          <span className="pm-btn__word">Close</span>
+        </span>
+        <span className="pm-btn__icon" aria-hidden="true">
+          <svg viewBox="0 0 40 40" focusable="false">
+            <circle className="pm-btn__track" cx="20" cy="20" r="18.5" />
+          </svg>
+          <span className="pm-btn__disc">
+            <i className="pm-btn__bar" />
+            <i className="pm-btn__bar" />
+          </span>
+        </span>
       </button>
     </div>
   )

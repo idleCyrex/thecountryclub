@@ -126,6 +126,7 @@ html.lenis, html.lenis body { height: auto; }
   display: inline-block;
   white-space: nowrap;
   padding: 0.12em 0.3em;
+  --brush-fit: calc(88vw / (var(--bn, 1) * .53 + .6));
 }
 .brush--dark { color: var(--dark); }
 .brush-over { position: absolute; left: 50%; top: 50%; translate: -50% -50%; white-space: nowrap; z-index: 2; }

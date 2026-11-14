@@ -1,10 +1,11 @@
 import { getContent } from '@/lib/content'
 import { pageMeta } from '@/lib/meta'
 import PageHero from '@/components/PageHero'
-import Reveal from '@/components/Reveal'
 import CtaBand from '@/components/CtaBand'
 import YouTubeLite from '@/components/YouTubeLite'
-import MediaFill from '@/components/ui/MediaFill'
+import Gallery, { type GalPhoto, type GalTab } from '@/components/Gallery'
+import { altOf } from '@/lib/media'
+import { DIMS } from '@/content/media-dims'
 
 export const revalidate = 300
 export const metadata = pageMeta(
@@ -14,26 +15,32 @@ export const metadata = pageMeta(
   'pool-party',
 )
 
-const PHOTOS = [
-  'aerial-club', 'gym-highfive', 'pool-party', 'tennis-night', 'gym-deadlift', 'spa-stones', 'pool-yoga', 'gym-flex',
-  'tennis-court', 'gym-duo', 'kids', 'gym-cable', 'pool', 'spa-clinic', 'gym-rack', 'pool-lounge', 'gym-stretch',
-  'tennis-shade', 'gym-seated', 'carnival', 'gym-cardio', 'spa-salon', 'aerial-side', 'gym-bike',
+const ORDER = [
+  'aerial-club:club', 'gym-highfive:gym', 'pool-party:pool', 'tennis-night:courts', 'gym-deadlift:gym', 'spa-stones:spa',
+  'pool-yoga:pool', 'gym-flex:gym', 'tennis-court:courts', 'gym-duo:gym', 'kids:club', 'gym-cable:gym', 'pool:pool',
+  'spa-clinic:spa', 'gym-rack:gym', 'pool-lounge:pool', 'gym-coach:gym', 'gym-stretch:gym', 'tennis-shade:courts',
+  'gym-seated:gym', 'carnival:club', 'gym-cardio:gym', 'spa-salon:spa', 'gym-floor:gym', 'pool-walk:pool', 'gym-stair:gym',
+  'spa-nails:spa', 'gym-legpress:gym', 'gym-bike:gym', 'gym-kickback:gym', 'aerial-side:club',
 ]
 
-export default async function Gallery() {
+const PHOTOS: GalPhoto[] = ORDER.map((s) => {
+  const [k, cat] = s.split(':')
+  const d = DIMS[k]
+  return { k, cat, ar: d ? Math.round((d[0] / d[1]) * 1000) / 1000 : 1.5, alt: altOf(k) }
+})
+
+const TABS: GalTab[] = [
+  ['all', 'All'], ['gym', 'Gym'], ['courts', 'Courts'], ['pool', 'Pool'], ['spa', 'Spa'], ['club', 'Club'],
+].map(([id, label]) => ({ id, label, n: id === 'all' ? PHOTOS.length : PHOTOS.filter((p) => p.cat === id).length }))
+
+export default async function GalleryPage() {
   const { settings, copy } = await getContent()
   return (
     <>
       <PageHero title="GALLERY" brush="club life" intro={<p>{copy.gallery}</p>} />
 
-      <section className="block" data-theme="dark">
-        <Reveal as="ul" className="masonry">
-          {PHOTOS.map((k) => (
-            <li key={k} data-r="">
-              <MediaFill k={k} w={800} sizes="(max-width: 743px) 50vw, 25vw" />
-            </li>
-          ))}
-        </Reveal>
+      <section className="gal" data-theme="dark">
+        <Gallery photos={PHOTOS} tabs={TABS} />
       </section>
 
       <section className="block" data-theme="yellow">

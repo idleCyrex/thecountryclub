@@ -60,7 +60,6 @@ export default function Hero({ hours }: { hours: string }) {
   const [active, setActive] = useState(0)
   const [count, setCount] = useState(CLIPS.length)
   const [cycling, setCycling] = useState(false)
-  const [reduced, setReduced] = useState(false)
   const [status, setStatus] = useState<{ open: boolean; text: string } | null>(null)
 
   useEffect(() => {
@@ -75,9 +74,7 @@ export default function Hero({ hours }: { hours: string }) {
   }, [])
 
   useEffect(() => {
-    const r = prefersReduced()
-    setReduced(r)
-    if (r || !root.current) return
+    if (prefersReduced() || !root.current) return
     const io = new IntersectionObserver(([e]) => setCycling(e.isIntersecting))
     io.observe(root.current)
     return () => io.disconnect()
@@ -229,7 +226,7 @@ export default function Hero({ hours }: { hours: string }) {
   return (
     <section className="hero" data-theme="yellow" ref={root}>
       <h1 className="sr-only">The Country Club at Port de Plaisance: gym, tennis, pool and Impulse Spa in Cole Bay, St. Maarten</h1>
-      <div className="hero__pin hx" style={{ ['--hx-every' as string]: `${EVERY}ms` }}>
+      <div className="hero__pin hx">
         <div className="hx-window">
           {CLIPS.slice(0, count).map((k, i) => (
             <div key={k} className={`hx-clip ${i === active ? 'is-active' : ''}`}>
@@ -246,12 +243,17 @@ export default function Hero({ hours }: { hours: string }) {
           </p>
           <p className="hx-title" aria-hidden="true">{t1}</p>
           <p className="hx-sub">At The Country Club</p>
-          <TransitionLink className="btn-ellipse hx-cta" href="/contact">
-            Membership inquiry
+          <TransitionLink className="hx-cta" href="/contact">
+            <span className="hx-cta__label">Membership inquiry</span>
+            <span className="hx-cta__disc" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </span>
           </TransitionLink>
-          <span className={`hx-progress${reduced || !cycling ? ' is-static' : ''}`} aria-hidden="true">
-            <i key={active} />
-          </span>
           <span className="sr-only">{hours}</span>
         </div>
 

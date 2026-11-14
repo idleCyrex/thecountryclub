@@ -31,6 +31,9 @@
 .footer .fi__link, .footer .fl { position: relative; color: inherit; text-decoration: none; }
 .footer .fi__link { font-weight: 600; }
 .footer .fi__link::after, .footer .fl::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .5s var(--ease-expo-out, var(--f-ease)); }
+@media (pointer: coarse) {
+  .footer .fi__link::before, .footer .fl::before { content: ""; position: absolute; inset: -12px -6px; }
+}
 .footer .fi__link:hover::after, .footer .fi__link:focus-visible::after, .footer .fl:hover::after, .footer .fl:focus-visible::after { transform: scaleX(1); }
 .footer .fi__hours { display: flex; flex-direction: column; align-items: center; gap: .9rem; }
 .footer .fi__row { margin: 0; display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: 0; background: none; border-radius: 0; }
