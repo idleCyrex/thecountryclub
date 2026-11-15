@@ -4,9 +4,8 @@
   --cw: calc(var(--u) * 12); --ch: calc(var(--u) * 15);
   --r: calc(var(--u) * 38);
   --tilt: -11deg;
-  --lift: calc(var(--u) * -10);
+  --lift: calc(var(--u) * -7);
   --ring-y: calc(var(--u) * 1.3);
-  --word-y: calc(var(--u) * -1.5);
   position: absolute; inset: 0; perspective: calc(var(--u) * 110); perspective-origin: 50% calc(50% + var(--lift));
   cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none;
 }
@@ -33,29 +32,21 @@
 @media (hover: hover) {
   .pile .orbit:not(.is-dragging) .orbit__card:hover::before { opacity: 1; }
 }
-.pile .orbit__wordwrap {
-  position: absolute; left: 0; right: 0; top: 50%; display: grid; justify-items: center; pointer-events: none;
-  transform: translateY(-50%) translateY(var(--word-y));
-}
-.pile .orbit__word {
-  font-size: min(calc(var(--u) * 17), 20vw); --wdth: 75; --wght: 720; letter-spacing: -.02em; line-height: 1; color: var(--yellow);
-  text-shadow: 0 .03em .25em rgba(var(--dark-rgb), .5); transform-origin: 50% calc(50% + .35em);
-}
 .pile .orbit__brush {
-  position: absolute; z-index: 5; left: 0; right: 0; top: calc(50% - var(--u) * 15.5); width: max-content; max-width: 96vw; margin: 0 auto;
+  position: absolute; z-index: 5; left: 0; right: 0; top: calc(50% - var(--u) * 23.5); width: max-content; max-width: 96vw; margin: 0 auto;
   font-size: calc(var(--u) * 4.2); transform: rotate(-7deg); white-space: nowrap; text-align: center; color: var(--light-yellow); letter-spacing: -1px;
 }
 .pile .orbit__actions {
-  position: absolute; z-index: 5; left: 0; right: 0; top: calc(50% + var(--u) * 18.8);
+  position: absolute; z-index: 5; left: 0; right: 0; top: calc(50% + var(--u) * 20.5);
   display: flex; gap: clamp(10px, .8vw, 18px); justify-content: center; flex-wrap: wrap; margin: 0;
 }
 .pile .orbit__actions .btn { min-width: 7.6vw; font-size: clamp(14px, .8vw, 18px); padding: 1.1em 2.3em; }
-html.motion .pile .orbit__word, html.motion .pile .orbit__actions { visibility: hidden; }
+html.motion .pile .orbit__actions { visibility: hidden; }
 @media (max-width: 743px) {
-  .pile .pile__pin { height: 142vw; }
-  .pile .orbit { --u: 2.6vw; --lift: calc(var(--u) * -8); --word-y: 0px; }
-  .pile .orbit__brush { top: calc(50% - var(--u) * 24); font-size: min(calc(var(--u) * 4.2), var(--brush-fit)); }
-  .pile .orbit__actions { top: calc(50% + var(--u) * 19.5); gap: 10px; }
+  .pile .pile__pin { height: 132vw; }
+  .pile .orbit { --u: 2.6vw; --tilt: -6deg; --lift: calc(var(--u) * -10); --ring-y: calc(var(--u) * 4.6); }
+  .pile .orbit__brush { top: calc(50% - var(--u) * 23); font-size: min(calc(var(--u) * 3.6), var(--brush-fit)); text-shadow: 0 .05em .5em rgba(var(--dark-rgb), .6); }
+  .pile .orbit__actions { top: calc(50% + var(--u) * 18); gap: 10px; }
   .pile .orbit__actions .btn { min-width: 130px; min-height: 40px; }
 }
 

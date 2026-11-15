@@ -3,20 +3,19 @@
 import { useRef, type CSSProperties } from 'react'
 import { useNear, refreshSoon } from '@/lib/lazy'
 import { gsap, useGSAP, prefersReduced } from '@/lib/gsap'
-import { brushWrite, initRolling, killRolling, roll } from '@/lib/motion'
+import { brushWrite } from '@/lib/motion'
 import type { Facility } from '@/content/site'
-import Rolling from '../ui/Rolling'
 import Brush from '../ui/Brush'
 import MediaFill from '../ui/MediaFill'
 import TransitionLink from '../ui/TransitionLink'
 import './gridstack.css'
 
 const AREAS = [
-  { word: 'THE CLUB', href: '/club-fitness', keys: ['kids', 'aerial-club', 'carnival'] },
-  { word: 'THE GYM', href: '/club-fitness', keys: ['gym-highfive', 'gym-rack', 'gym-flex'] },
-  { word: 'THE COURTS', href: '/tennis', keys: ['tennis-night', 'tennis-court', 'tennis-shade'] },
-  { word: 'THE POOL', href: '/pool', keys: ['pool-party', 'pool', 'pool-yoga'] },
-  { word: 'THE SPA', href: '/spa', keys: ['spa-clinic', 'spa-stones', 'spa-salon'] },
+  { href: '/club-fitness', keys: ['kids', 'aerial-club', 'carnival'] },
+  { href: '/club-fitness', keys: ['gym-highfive', 'gym-rack', 'gym-flex'] },
+  { href: '/tennis', keys: ['tennis-night', 'tennis-court', 'tennis-shade'] },
+  { href: '/pool', keys: ['pool-party', 'pool', 'pool-yoga'] },
+  { href: '/spa', keys: ['spa-clinic', 'spa-stones', 'spa-salon'] },
 ]
 const CARDS = AREAS.flatMap((a) => a.keys.map((k) => ({ k, href: a.href })))
 const STEP = 24
@@ -42,26 +41,12 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
 
       const orbit = () => {
         const ring = el.querySelector<HTMLElement>('.orbit__ring')!
-        const word = el.querySelector<HTMLElement>('.orbit__word')!
         const photos = gsap.utils.toArray<HTMLElement>('.orbit__card', el)
         const state = { rot: 0, spin: 0, k: 1 }
         const dims: string[] = []
         const far: boolean[] = []
-        let want = 0
-        let shown = 0
-        let rolling = false
         let live = false
-        let alive = true
 
-        const sync = () => {
-          if (!alive || rolling || shown === want || !live) return
-          rolling = true
-          shown = want
-          roll(word, { word: AREAS[want].word, duration: 0.6, stagger: 0.03 }).then(() => {
-            rolling = false
-            sync()
-          })
-        }
         const apply = () => {
           const turn = state.rot + state.spin
           ring.style.setProperty('--rot', `${turn}deg`)
@@ -79,8 +64,6 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
               p.classList.toggle('is-far', f)
             }
           })
-          want = ((Math.round(-state.rot / SECTOR) % 5) + 5) % 5
-          sync()
         }
 
         if (prefersReduced()) {
@@ -88,7 +71,6 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
           return
         }
 
-        initRolling(word)
         state.k = 0.3
         state.spin = 80
         gsap.set(photos, { autoAlpha: 0 })
@@ -98,16 +80,8 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
           .timeline({ onUpdate: apply, scrollTrigger: { trigger: '.pile__pin', start: 'top 65%', once: true } })
           .to(state, { k: 1, spin: 0, duration: 1.6, ease: 'expo.out' }, 0)
           .fromTo(photos, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6, stagger: 0.03, ease: 'none' }, 0)
-          .fromTo(word, { autoAlpha: 0, scaleY: 0 }, { autoAlpha: 1, scaleY: 1, duration: 0.8, ease: 'expo.out' }, 0.5)
-          .call(
-            () => {
-              live = true
-              sync()
-            },
-            [],
-            1.3,
-          )
-          .add(brushWrite(el.querySelector('.orbit__brush'), { duration: 0.4, stagger: 0.15 }), 1)
+          .call(() => void (live = true), [], 1)
+          .add(brushWrite(el.querySelector('.orbit__brush'), { duration: 0.4, stagger: 0.15 }), 0.5)
           .fromTo('.orbit__actions', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'expo.out' }, 1.2)
 
         const stage = el.querySelector<HTMLElement>('.orbit')!
@@ -196,7 +170,6 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
         }, 3400)
 
         return () => {
-          alive = false
           window.clearInterval(auto)
           io.disconnect()
           tw?.kill()
@@ -207,7 +180,6 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
           stage.removeEventListener('click', onClick, true)
           stage.removeEventListener('dragstart', noDrag)
           stage.classList.remove('is-dragging')
-          killRolling(word)
         }
       }
 
@@ -262,9 +234,6 @@ export default function GridStack({ facilities }: { facilities: Facility[] }) {
                   </TransitionLink>
                 ))}
               </div>
-            </div>
-            <div className="orbit__wordwrap">
-              <Rolling text={AREAS[0].word} className="orbit__word" mode="none" />
             </div>
           </div>
           <Brush text="Choose your game" mode="none" className="orbit__brush" />
