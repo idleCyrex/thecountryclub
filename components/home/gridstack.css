@@ -43,8 +43,8 @@
 .pile .orbit__actions .btn { min-width: 7.6vw; font-size: clamp(14px, .8vw, 18px); padding: 1.1em 2.3em; }
 html.motion .pile .orbit__actions { visibility: hidden; }
 @media (max-width: 743px) {
-  .pile .pile__pin { height: 132vw; }
-  .pile .orbit { --u: 2.6vw; --tilt: -6deg; --lift: calc(var(--u) * -10); --ring-y: calc(var(--u) * 4.6); }
+  .pile .pile__pin { height: 146vw; }
+  .pile .orbit { top: 14vw; --u: 2.6vw; --tilt: -6deg; --lift: calc(var(--u) * -10); --ring-y: calc(var(--u) * 4.6); }
   .pile .orbit__brush { top: calc(50% - var(--u) * 23); font-size: min(calc(var(--u) * 3.6), var(--brush-fit)); text-shadow: 0 .05em .5em rgba(var(--dark-rgb), .6); }
   .pile .orbit__actions { top: calc(50% + var(--u) * 18); gap: 10px; }
   .pile .orbit__actions .btn { min-width: 130px; min-height: 40px; }
